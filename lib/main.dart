@@ -1,3 +1,4 @@
+import 'package:audoria/screens/all_lessons_page.dart';
 import 'package:flutter/material.dart';
 import 'screens/child_home.dart';
 
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const ChildHomePage(username: 'Mariam'),
+      home: const AllLessonsPage(),
       debugShowCheckedModeBanner: false,
     );
   }
