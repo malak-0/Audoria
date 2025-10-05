@@ -1,4 +1,5 @@
 import 'package:audoria/custom_widgets/custom_appbar.dart';
+import 'package:audoria/screens/scan_qr_code_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/screens/login_screen.dart';
 

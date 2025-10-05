@@ -16,25 +16,25 @@ class LoginScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 25),
         child: Column(
           children: [
-            SizedBox(height: 40),
+            SizedBox(height: 50),
             CustomText.username("Sign Up"),
             Form(
               child: Column(
                 children: [
-                  SizedBox(height: 60),
+                  SizedBox(height: 70),
                   CustomTextField(
                     controller: usernameController,
                     hintText: "Username",
                     icon: Icons.person,
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 30),
 
                   CustomTextField(
                     controller: emailController,
                     hintText: "Email",
                     icon: Icons.email,
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 30),
 
                   CustomTextField(
                     controller: passwordController,
@@ -45,7 +45,7 @@ class LoginScreen extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 30),
+            SizedBox(height: 40),
 
             CustomButton(
               destinationPage: Placeholder(),
@@ -54,7 +54,7 @@ class LoginScreen extends StatelessWidget {
               color: Colors.black.value,
               textColor: Colors.white.value,
             ),
-            SizedBox(height: 15),
+            SizedBox(height: 25),
             Row(
               children: [
                 Expanded(child: Divider(color: Colors.black87)),
@@ -68,7 +68,7 @@ class LoginScreen extends StatelessWidget {
                 Expanded(child: Divider(color: Colors.black87)),
               ],
             ),
-            SizedBox(height: 15),
+            SizedBox(height: 25),
             CustomButton(
               destinationPage: Placeholder(),
               text: "Scan QR Code",
