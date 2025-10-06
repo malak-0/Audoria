@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../custom_widgets/custom_card.dart';
 import '../custom_widgets/custom_text.dart';
 import '../custom_widgets/custom_bottom_navbar.dart';
-import 'saved_files_page.dart';
 
 class ChildHomePage extends StatelessWidget {
   final String username;
@@ -42,12 +41,7 @@ class ChildHomePage extends StatelessWidget {
                     imagePath: 'assets/images/lesson.png',
                     label: 'LESSON',
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SavedFilesPage(),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/saved_files');
                     },
                   ),
                   const CustomCard(
