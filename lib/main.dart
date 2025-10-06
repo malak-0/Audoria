@@ -1,3 +1,4 @@
+import 'package:audoria/screens/insights_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/custom_widgets/custom_appbar.dart';
 import 'package:audoria/screens/camera_capture_screen.dart';
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
           preferredSize: const Size.fromHeight(80),
           child: CustomAppbar(),
         ),
-        body: const CameraCaptureScreen(),
+        body: InsightsScreen(),
       ),
     );
   }
