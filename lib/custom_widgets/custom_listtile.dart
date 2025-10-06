@@ -25,7 +25,7 @@ class CustomListtile extends StatelessWidget {
           title,
           style: TextStyle(
             color: Color(0xff030303),
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: FontWeight.w500,
             fontFamily: 'inter',
           ),
