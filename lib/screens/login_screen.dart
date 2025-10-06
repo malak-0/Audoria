@@ -1,6 +1,7 @@
 import 'package:audoria/custom_widgets/custom_button.dart';
 import 'package:audoria/custom_widgets/custom_text.dart';
 import 'package:audoria/custom_widgets/custom_text_field.dart';
+import 'package:audoria/screens/scan_qr_code_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -70,7 +71,7 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: 25),
             CustomButton(
-              destinationPage: Placeholder(),
+              destinationPage: ScanQrCodeScreen(),
               text: "Scan QR Code",
               radius: 20,
               color: Colors.white.value,

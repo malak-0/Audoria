@@ -1,9 +1,10 @@
-import 'package:audoria/custom_widgets/custom_appbar.dart';
-import 'package:audoria/screens/scan_qr_code_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:audoria/screens/login_screen.dart';
+import 'package:audoria/custom_widgets/custom_appbar.dart';
+import 'package:audoria/screens/camera_capture_screen.dart';
+import 'package:audoria/utils.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -15,12 +16,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Color(0xFF9BB9FF),
+        backgroundColor: bgColor,
         appBar: PreferredSize(
-          preferredSize: Size.fromHeight(80),
+          preferredSize: const Size.fromHeight(80),
           child: CustomAppbar(),
         ),
-        body: LoginScreen(),
+        body: const CameraCaptureScreen(),
       ),
     );
   }
