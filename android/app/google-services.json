@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "495849589205",
+    "project_id": "audoria-f1a49",
+    "storage_bucket": "audoria-f1a49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:495849589205:android:4d4e6b94da59cd7531155c",
+        "android_client_info": {
+          "package_name": "com.example.audoria"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe7LVkuXFVEqZycVJc6SvPEIHz5TS8cu8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
