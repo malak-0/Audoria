@@ -1,19 +1,18 @@
 import 'package:audoria/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:audoria/custom_widgets/custom_text.dart';
+import 'package:audoria/widgets/custom_text.dart';
 import 'package:lottie/lottie.dart';
 
-
-class AddChild extends StatefulWidget {
+class AddChildScreen extends StatefulWidget {
   final String username;
 
-  const AddChild({super.key, this.username = "username"});
+  const AddChildScreen({super.key, this.username = "username"});
 
   @override
-  _AddChildState createState() => _AddChildState();
+  _AddChildScreenState createState() => _AddChildScreenState();
 }
 
-class _AddChildState extends State<AddChild> {
+class _AddChildScreenState extends State<AddChildScreen> {
   bool _showBox = false;
 
   @override
@@ -45,7 +44,7 @@ class _AddChildState extends State<AddChild> {
                     "Now you’ve got a parent account,\ngreat role ! you have to add at least \none child to start.",
                   ),
                   const SizedBox(height: 25),
-                  
+
                   Center(
                     child: _showBox
                         ? Column(
@@ -53,7 +52,7 @@ class _AddChildState extends State<AddChild> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                Lottie.asset(
+                                  Lottie.asset(
                                     'assets/animations/childInfo.json',
                                     width: 70,
                                   ),
@@ -61,15 +60,15 @@ class _AddChildState extends State<AddChild> {
                                   CustomText.subtitle('Child Info'),
                                 ],
                               ),
-                  
+
                               const SizedBox(height: 10),
-                  
+
                               Container(
                                 width: MediaQuery.of(context).size.width * 0.9,
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                 // border: Border.all(color: const Color.fromARGB(255, 252, 251, 251), width: 2),
+                                  // border: Border.all(color: const Color.fromARGB(255, 252, 251, 251), width: 2),
                                   borderRadius: BorderRadius.circular(25),
                                 ),
                                 child: Column(
@@ -85,9 +84,9 @@ class _AddChildState extends State<AddChild> {
                                   ],
                                 ),
                               ),
-                  
+
                               const SizedBox(height: 30),
-                  
+
                               Center(
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
@@ -107,18 +106,21 @@ class _AddChildState extends State<AddChild> {
                               ),
                             ],
                           )
-                          : GestureDetector(
+                        : GestureDetector(
                             onTap: () {
                               setState(() {
                                 _showBox = true;
-                            });
+                              });
                             },
                             child: Padding(
                               padding: const EdgeInsets.only(top: 50.0),
                               child: Container(
                                 width: 170,
                                 height: 170,
-                                decoration: BoxDecoration(color: textColor.withValues(alpha: 0.1),borderRadius: BorderRadius.circular(35)),
+                                decoration: BoxDecoration(
+                                  color: textColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(35),
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -126,49 +128,50 @@ class _AddChildState extends State<AddChild> {
                                     CircleAvatar(
                                       backgroundColor: Colors.white,
                                       child: Lottie.asset(
-                                        'assets/animations/addChild.json',
+                                        'assets/animations/AddChildScreen.json',
                                         width: 50,
                                       ),
                                     ),
                                     const SizedBox(height: 10),
                                     CustomText.subtitle('Add Child'),
-                                              ]),
+                                  ],
+                                ),
                               ),
                             ),
-                          )
-                        // : ElevatedButton(
-                        //     onPressed: () {
-                        //       setState(() {
-                        //         _showBox = true;
-                        //       });
-                        //     },
-                        //     style: ElevatedButton.styleFrom(
-                        //       backgroundColor: textColor.withValues(alpha: 0.01),
-                             
-                        //       shape: RoundedRectangleBorder(
-                        //         borderRadius: BorderRadius.circular(35),
-                        //       ),
-                        //       padding: const EdgeInsets.symmetric(
-                        //         horizontal: 50,
-                        //         vertical: 50,
-                        //       ),
-                        //     ),
-                        //     child: Column(
-                        //       crossAxisAlignment: CrossAxisAlignment.center,
-                        //       mainAxisAlignment: MainAxisAlignment.center,
-                        //       children: [
-                        //         CircleAvatar(
-                        //           backgroundColor: Colors.white,
-                        //           child: Lottie.asset(
-                        //             'assets/animations/addChild.json',
-                        //             width: 50,
-                        //           ),
-                        //         ),
-                        //         const SizedBox(height: 10),
-                        //         CustomText.subtitle('Add Child'),
-                        //       ],
-                        //     ),
-                        //   ),
+                          ),
+                    // : ElevatedButton(
+                    //     onPressed: () {
+                    //       setState(() {
+                    //         _showBox = true;
+                    //       });
+                    //     },
+                    //     style: ElevatedButton.styleFrom(
+                    //       backgroundColor: textColor.withValues(alpha: 0.01),
+
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(35),
+                    //       ),
+                    //       padding: const EdgeInsets.symmetric(
+                    //         horizontal: 50,
+                    //         vertical: 50,
+                    //       ),
+                    //     ),
+                    //     child: Column(
+                    //       crossAxisAlignment: CrossAxisAlignment.center,
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         CircleAvatar(
+                    //           backgroundColor: Colors.white,
+                    //           child: Lottie.asset(
+                    //             'assets/animations/AddChildScreen.json',
+                    //             width: 50,
+                    //           ),
+                    //         ),
+                    //         const SizedBox(height: 10),
+                    //         CustomText.subtitle('Add Child'),
+                    //       ],
+                    //     ),
+                    //   ),
                   ),
                 ],
               ),

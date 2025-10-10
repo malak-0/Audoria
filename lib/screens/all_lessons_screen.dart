@@ -1,18 +1,18 @@
-import 'package:audoria/custom_widgets/custom_text.dart';
+import 'package:audoria/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../custom_widgets/custom_appbar.dart';
-import '../custom_widgets/custom_bottom_navbar.dart';
-import '../custom_widgets/custom_listtile.dart';
+import '../widgets/custom_appbar.dart';
+import '../widgets/custom_bottom_navbar.dart';
+import '../widgets/custom_list_tile.dart';
 
-class AllLessonsPage extends StatefulWidget {
-  const AllLessonsPage({super.key});
+class AllLessonsScreen extends StatefulWidget {
+  const AllLessonsScreen({super.key});
 
   @override
-  State<AllLessonsPage> createState() => _AllLessonsPageState();
+  State<AllLessonsScreen> createState() => _AllLessonsScreenState();
 }
 
-class _AllLessonsPageState extends State<AllLessonsPage> {
+class _AllLessonsScreenState extends State<AllLessonsScreen> {
   List<Map<String, String>> lessons = [
     {'title': 'Math - Lesson 1', 'date': '2 Feb, 2025'},
     {'title': 'English - Lesson 3', 'date': '3 Feb, 2025'},
@@ -373,7 +373,7 @@ class _AllLessonsPageState extends State<AllLessonsPage> {
                       itemBuilder: (context, index) {
                         return Column(
                           children: [
-                            CustomListtile(
+                            CustomListTile(
                               title: lessons[index]['title']!,
                               subTitle: 'Uploaded: ${lessons[index]['date']}',
                               filePage: Container(),

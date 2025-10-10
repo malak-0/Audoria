@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 
-class CustomCard extends StatefulWidget {
+class CustomCard extends StatelessWidget {
   final String imagePath;
   final String label;
-  final VoidCallback? onTap;
+  final String? routeName;
 
   const CustomCard({
     super.key,
     required this.imagePath,
     required this.label,
-    this.onTap,
+    this.routeName,
   });
 
   @override
-  State<CustomCard> createState() => _CustomCardState();
-}
-
-class _CustomCardState extends State<CustomCard> {
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: routeName != null
+          ? () => Navigator.pushNamed(context, routeName!)
+          : null,
       child: Container(
         width: 140,
         height: 140,
@@ -41,11 +38,11 @@ class _CustomCardState extends State<CustomCard> {
           children: [
             SizedBox(
               height: 60,
-              child: Image.asset(widget.imagePath, fit: BoxFit.contain),
+              child: Image.asset(imagePath, fit: BoxFit.contain),
             ),
             const SizedBox(height: 5),
             Text(
-              widget.label,
+              label,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 18,

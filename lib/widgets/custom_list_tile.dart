@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class CustomListtile extends StatelessWidget {
+class CustomListTile extends StatelessWidget {
   final String title;
   final String subTitle;
   final Widget filePage;
 
-  const CustomListtile({
+  const CustomListTile({
     super.key,
     required this.title,
     required this.subTitle,

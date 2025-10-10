@@ -1,4 +1,4 @@
-import 'package:audoria/custom_widgets/custom_text.dart';
+import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/models/file_options_model.dart';
 import 'package:audoria/models/image_options_model.dart';
 import 'package:audoria/models/parent_home_options.dart';
@@ -17,43 +17,46 @@ class LottieCard extends StatelessWidget {
     this.parentHomeOptions,
   });
 
-  Widget build_custom_container({
+  Widget buildCustomContainer({
     double? height,
     double? width,
-    required String title, 
-    required String iconPath
-    })
-    {
-      return Container(
-      height: height?? 190,
-      width: width?? 190,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        color: Colors.white,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Lottie.asset(
-                iconPath,
-                width: 100,
-                height: 100,
-                fit: BoxFit.fitHeight,
-              ),
-              CustomText.username(title),
-            ],
+    required String title,
+    required String iconPath,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: height ?? 190,
+        width: width ?? 190,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          color: Colors.white,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Lottie.asset(
+                  iconPath,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.fitHeight,
+                ),
+                const SizedBox(height: 10),
+                CustomText.username(title),
+              ],
+            ),
           ),
         ),
       ),
     );
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
-
     if (fileOptions != null) {
       final rowChildren = [
         Center(child: CustomText.username(fileOptions!.title)),
@@ -84,20 +87,23 @@ class LottieCard extends StatelessWidget {
       );
     }
 
-    if (imageOptions != null){
-      return build_custom_container(
+    if (imageOptions != null) {
+      return buildCustomContainer(
         iconPath: imageOptions!.iconPath,
-        title: imageOptions!.title
-        ); 
+        title: imageOptions!.title,
+      );
     }
 
-    if (parentHomeOptions != null){
-      return build_custom_container(
+    if (parentHomeOptions != null) {
+      return buildCustomContainer(
         iconPath: parentHomeOptions!.iconPath,
-        title: parentHomeOptions!.title
-        );
+        title: parentHomeOptions!.title,
+        onTap: () {
+          Navigator.pushNamed(context, parentHomeOptions!.routeName);
+        },
+      );
     }
-  return const Placeholder();
-    
+
+    return const Placeholder();
   }
 }

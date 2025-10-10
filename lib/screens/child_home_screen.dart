@@ -1,12 +1,13 @@
+import 'package:audoria/utils.dart';
 import 'package:flutter/material.dart';
 
-import '../custom_widgets/custom_card.dart';
-import '../custom_widgets/custom_text.dart';
-import '../custom_widgets/custom_bottom_navbar.dart';
+import '../widgets/custom_card.dart';
+import '../widgets/custom_text.dart';
+import '../widgets/custom_bottom_navbar.dart';
 
-class ChildHomePage extends StatelessWidget {
-  final String username;
-  const ChildHomePage({super.key, required this.username});
+class ChildHomeScreen extends StatelessWidget {
+  final String username = "Salma";
+  const ChildHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,7 @@ class ChildHomePage extends StatelessWidget {
                   const CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Colors.black, size: 28),
+                    child: Icon(Icons.person, color: textColor, size: 28),
                   ),
                 ],
               ),
@@ -40,9 +41,7 @@ class ChildHomePage extends StatelessWidget {
                   CustomCard(
                     imagePath: 'assets/images/lesson.png',
                     label: 'LESSON',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/saved_files');
-                    },
+                    routeName: "all_lessons",
                   ),
                   const CustomCard(
                     imagePath: 'assets/images/camera.png',

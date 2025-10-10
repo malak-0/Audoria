@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
-  final Widget destinationPage;
+  final String routeName;
   final String text;
   final double radius;
   final int color;
@@ -9,7 +9,7 @@ class CustomButton extends StatelessWidget {
 
   const CustomButton({
     super.key,
-    required this.destinationPage,
+    required this.routeName,
     required this.text,
     required this.radius,
     required this.color,
@@ -28,10 +28,7 @@ class CustomButton extends StatelessWidget {
           padding: EdgeInsets.all(15),
         ),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => destinationPage),
-          );
+          Navigator.pushNamed(context, routeName);
         },
         child: Text(
           text,

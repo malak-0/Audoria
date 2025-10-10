@@ -1,5 +1,11 @@
 class ParentHomeOptionsModel {
   final String title;
   final String iconPath;
-  const ParentHomeOptionsModel({required this.title, required this.iconPath});
+  final String routeName;
+
+  ParentHomeOptionsModel({
+    required this.title,
+    required this.iconPath,
+    required this.routeName,
+  });
 }

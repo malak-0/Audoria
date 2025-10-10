@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../custom_widgets/custom_appbar.dart';
-import '../custom_widgets/custom_bottom_navbar.dart';
-import '../custom_widgets/custom_text.dart';
+import '../widgets/custom_appbar.dart';
+import '../widgets/custom_bottom_navbar.dart';
+import '../widgets/custom_text.dart';
 
-class SavedFilesPage extends StatefulWidget {
-  const SavedFilesPage({super.key});
+class SavedFilesScreen extends StatefulWidget {
+  const SavedFilesScreen({super.key});
 
   @override
-  State<SavedFilesPage> createState() => _SavedFilesPageState();
+  State<SavedFilesScreen> createState() => _SavedFilesScreenState();
 }
 
-class _SavedFilesPageState extends State<SavedFilesPage> {
+class _SavedFilesScreenState extends State<SavedFilesScreen> {
   List<Map<String, dynamic>> savedFiles = [
     {
       'title': 'Math - Lesson 1',

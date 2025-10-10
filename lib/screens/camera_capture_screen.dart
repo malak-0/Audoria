@@ -68,34 +68,36 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      children: [
-        CameraPreview(_controller!),
-        Positioned(
-          bottom: 40,
-          child: GestureDetector(
-            onTap: _captureImage,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Text(
-                  "capture",
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          CameraPreview(_controller!),
+          Positioned(
+            bottom: 40,
+            child: GestureDetector(
+              onTap: _captureImage,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text(
+                    "capture",
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

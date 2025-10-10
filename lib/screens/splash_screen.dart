@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate to next screen after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/child_home');
+        Navigator.pushReplacementNamed(context, 'login');
       }
     });
   }
