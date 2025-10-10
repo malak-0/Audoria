@@ -3,7 +3,15 @@ import 'package:audoria/screens/captured_image.dart';
 import 'package:audoria/screens/one_file.dart';
 import 'package:audoria/screens/qr_parent.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:audoria/screens/all_lessons_page.dart';
+import 'package:audoria/screens/saved_files_page.dart';
+import 'package:audoria/screens/splash_screen.dart';
+import 'screens/child_home.dart';
+import 'package:audoria/screens/insights_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:audoria/custom_widgets/custom_appbar.dart';
+import 'package:audoria/screens/camera_capture_screen.dart';
+import 'package:audoria/utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,13 +24,29 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: CapturedImage(),
+            debugShowCheckedModeBanner: false,
+      title: 'Audoria',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        fontFamily: 'Inter',
+      ),
+       home: Scaffold(
+        backgroundColor: bgColor,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: CustomAppbar(),
+        ),
+        body: InsightsScreen(),
+      ),
+//       home: const SplashScreen(),
+      routes: {
+        '/child_home': (context) => const ChildHomePage(username: 'Child'),
+        '/saved_files': (context) => const SavedFilesPage(),
+        '/all_lessons': (context) => const AllLessonsPage(),
+      },
     );
   }
 }
-
