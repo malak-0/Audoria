@@ -1,3 +1,8 @@
+import 'package:audoria/firebase_options.dart';
+import 'package:audoria/screens/captured_image.dart';
+import 'package:audoria/screens/one_file.dart';
+import 'package:audoria/screens/qr_parent.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:audoria/screens/all_lessons_page.dart';
 import 'package:audoria/screens/saved_files_page.dart';
 import 'package:audoria/screens/splash_screen.dart';
@@ -8,8 +13,11 @@ import 'package:audoria/custom_widgets/custom_appbar.dart';
 import 'package:audoria/screens/camera_capture_screen.dart';
 import 'package:audoria/utils.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 

@@ -39,7 +39,7 @@ class CustomText extends StatelessWidget {
       style: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 16,
-        fontWeight: FontWeight.normal,
+        fontWeight: FontWeight.w600,
         color: Color(0xFF030303),
       ),
     );

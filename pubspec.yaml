@@ -31,6 +31,9 @@ dependencies:
   camera: ^0.11.2
   cupertino_icons: ^1.0.8
   curved_navigation_bar: ^1.0.3
+  lottie: ^3.3.2
+  qr_flutter: ^4.1.0
+  firebase_core: ^4.1.1
   file_picker: ^8.0.6
   flutter:
     sdk: flutter
@@ -54,6 +57,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/animations/
     - assets/images/lesson.png
     - assets/images/camera.png
     - assets/images/question.png
