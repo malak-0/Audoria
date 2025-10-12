@@ -5,7 +5,7 @@ class CustomInsightCard extends StatelessWidget {
   final int number;
   final String label;
 
-  const CustomInsightCard({
+  const CustomInsightCard({super.key, 
     required this.icon,
     required this.number,
     required this.label,

@@ -32,7 +32,7 @@ class ParentHomeScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.person_pin, size: 50),
                   const SizedBox(width: 8),
-                  CustomText.username("$username"),
+                  CustomText.username(username),
                 ],
               ),
               const SizedBox(height: 50),

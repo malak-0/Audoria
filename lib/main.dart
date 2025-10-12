@@ -1,8 +1,8 @@
 import 'package:audoria/firebase_options.dart';
 import 'package:audoria/routes.dart';
+import 'package:audoria/utils.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:audoria/utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +28,8 @@ class MyApp extends StatelessWidget {
           foregroundColor: textColor,
         ),
       ),
-      initialRoute: '/',
       routes: appRoutes,
+      initialRoute: 'child_home',
     );
   }
 }

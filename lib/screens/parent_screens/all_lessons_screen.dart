@@ -1,9 +1,9 @@
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../widgets/custom_appbar.dart';
-import '../widgets/custom_bottom_navbar.dart';
-import '../widgets/custom_list_tile.dart';
+import '../../widgets/custom_appbar.dart';
+import '../../widgets/custom_bottom_navbar.dart';
+import '../../widgets/custom_list_tile.dart';
 
 class AllLessonsScreen extends StatefulWidget {
   const AllLessonsScreen({super.key});

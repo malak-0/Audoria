@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ParentQrScreen extends StatelessWidget {
+  const ParentQrScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

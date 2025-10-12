@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_appbar.dart';
-import '../widgets/custom_bottom_navbar.dart';
-import '../widgets/custom_text.dart';
+import '../../widgets/custom_appbar.dart';
+import '../../widgets/custom_bottom_navbar.dart';
+import '../../widgets/custom_text.dart';
 
 class SavedFilesScreen extends StatefulWidget {
   const SavedFilesScreen({super.key});

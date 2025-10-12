@@ -2,7 +2,6 @@ import 'package:audoria/utils.dart';
 import 'package:audoria/widgets/custom_button.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_text_field.dart';
-import 'package:audoria/screens/scan_qr_code_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
