@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import 'screens/parent/add_child_screen.dart';
-import 'screens/parent/all_lessons_screen.dart';
-import 'screens/child/camera_capture_screen.dart';
-import 'screens/child/captured_image_screen.dart';
-import 'screens/child/child_home_screen.dart';
-import 'screens/parent/insights_screen.dart';
+import 'screens/parent_screens/add_child_screen.dart';
+import 'screens/parent_screens/all_lessons_screen.dart';
+import 'screens/child_screens/camera_capture_screen.dart';
+import 'screens/child_screens/captured_image_screen.dart';
+import 'screens/child_screens/child_home_screen.dart';
+import 'screens/parent_screens/insights_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/child/single_file_screen.dart';
-import 'screens/parent/parent_home_screen.dart';
-import 'screens/parent/parent_qr_screen.dart';
-import 'screens/child/questions_screen.dart';
-import 'screens/child/saved_files_screen.dart';
-import 'screens/child/scan_qr_code_screen.dart';
+import 'screens/child_screens/single_file_screen.dart';
+import 'screens/parent_screens/parent_home_screen.dart';
+import 'screens/parent_screens/parent_qr_screen.dart';
+import 'screens/child_screens/questions_screen.dart';
+import 'screens/child_screens/saved_files_screen.dart';
+import 'screens/child_screens/scan_qr_code_screen.dart';
 import 'screens/splash_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
