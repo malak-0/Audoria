@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
 class CustomButton extends StatelessWidget {
-  final String routeName;
   final String text;
   final double radius;
   final int color;
   final int textColor;
+  final Function onClick;
 
   const CustomButton({
     super.key,
-    required this.routeName,
     required this.text,
     required this.radius,
     required this.color,
     required this.textColor,
+    required this.onClick,
   });
   @override
   Widget build(BuildContext context) {
@@ -27,9 +27,7 @@ class CustomButton extends StatelessWidget {
           ),
           padding: EdgeInsets.all(15),
         ),
-        onPressed: () {
-          Navigator.pushNamed(context, routeName);
-        },
+        onPressed: () => onClick(),
         child: Text(
           text,
           style: TextStyle(
