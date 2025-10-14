@@ -1,7 +1,7 @@
 import 'package:audoria/widgets/custom_bottom_navbar.dart';
 import 'package:audoria/widgets/lottie_card.dart';
 import 'package:audoria/data/parent_home_list.dart';
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/widgets/custom_text.dart';
 

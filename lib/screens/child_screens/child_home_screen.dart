@@ -1,14 +1,13 @@
-import 'package:audoria/services/commands_handler.dart';
-import 'package:audoria/services/listen.dart';
-import 'package:audoria/services/speak.dart';
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/voice_navigation/listen.dart';
+import 'package:audoria/utils/voice_navigation/speak.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_text.dart';
 import '../../widgets/custom_bottom_navbar.dart';
 
 class ChildHomeScreen extends StatefulWidget {
-
   const ChildHomeScreen({super.key});
 
   @override
@@ -22,36 +21,36 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
   late CommandHandler commandHandler;
   final voiceService = VoiceService();
 
-@override
-void initState() {
-  super.initState();
-  _initializeVoiceSystem();
-}
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoiceSystem();
+  }
 
-Future<void> _initializeVoiceSystem() async {
+  Future<void> _initializeVoiceSystem() async {
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    voiceService.autoRestart = false;
 
-  tts = SpeechFeedback();
-  commandHandler = CommandHandler(tts: tts);
-  voiceService.autoRestart = false;
+    voiceService.onResult = (recognizedText) {
+      commandHandler.handleCommand(context, 'home_page', recognizedText);
+    };
 
-  voiceService.onResult = (recognizedText) {
-    commandHandler.handleCommand(context, 'home_page', recognizedText);
-  };
+    await tts.speak(
+      "Welcome $username. You are on the home screen. Say camera, saved files, or questions.",
+    );
 
-  await tts.speak(
-    "Welcome $username. You are on the home screen. Say camera, saved files, or questions.",
-  );
+    voiceService.autoRestart = true;
 
-  voiceService.autoRestart = true;
-
-  await voiceService.init();
-}
+    await voiceService.init();
+  }
 
   @override
   void dispose() {
     voiceService.uninitialize();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

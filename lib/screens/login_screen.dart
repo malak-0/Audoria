@@ -1,4 +1,4 @@
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:audoria/widgets/custom_button.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_text_field.dart';

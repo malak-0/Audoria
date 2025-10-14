@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:audoria/widgets/custom_text.dart';
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:flutter/widgets.dart';
 
 class PageHeader extends StatelessWidget {

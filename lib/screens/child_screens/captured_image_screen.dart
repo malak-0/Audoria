@@ -1,7 +1,7 @@
 import 'package:audoria/widgets/lottie_card.dart';
 import 'package:audoria/widgets/page_header.dart';
 import 'package:audoria/data/captured_image_list.dart';
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 class CapturedImageScreen extends StatelessWidget {

@@ -1,4 +1,4 @@
-import 'package:audoria/utils.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 class QuestionsScreen extends StatelessWidget {
