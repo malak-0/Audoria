@@ -1,3 +1,4 @@
+import 'package:audoria/widgets/custom_appbar.dart';
 import 'package:audoria/widgets/custom_bottom_navbar.dart';
 import 'package:audoria/widgets/lottie_card.dart';
 import 'package:audoria/data/parent_home_list.dart';
@@ -19,6 +20,7 @@ class ParentHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: CustomAppbar(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(top: 50, left: 20),

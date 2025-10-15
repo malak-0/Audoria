@@ -6,31 +6,29 @@ import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController usernameController = TextEditingController();
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  void _handleRegister() async {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      await register(
+      await login(
         context,
         emailController.text.trim(),
         passwordController.text.trim(),
-        usernameController.text.trim(),
       );
 
       setState(() {
@@ -51,24 +49,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 children: [
                   SizedBox(height: 50),
-                  CustomText.username("Register"),
+                  CustomText.username("Login"),
                   SizedBox(height: 70),
-                  CustomTextField(
-                    controller: usernameController,
-                    hintText: "Username",
-                    icon: Icons.person,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a username';
-                      }
-                      if (value.length < 3) {
-                        return 'Username must be at least 3 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 30),
-
                   CustomTextField(
                     controller: emailController,
                     hintText: "Email",
@@ -95,9 +77,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a password';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
                       return null;
                     },
                   ),
@@ -106,44 +85,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _isLoading
                       ? const CircularProgressIndicator()
                       : CustomButton(
-                          text: "Register as a parent",
+                          text: "Login",
                           radius: 20,
                           color: textColor.value,
                           textColor: Colors.white.value,
-                          onClick: _handleRegister,
+                          onClick: _handleLogin,
                         ),
                   SizedBox(height: 25),
 
                   TextButton(
                     onPressed: () {
-                      navigatePush(context, "login");
+                      navigatePush(context, "register");
                     },
                     child: Text(
-                      "Already have an account? Login",
+                      "Don't have an account? Register",
                       style: TextStyle(color: textColor, fontSize: 16),
                     ),
-                  ),
-                  SizedBox(height: 25),
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.black87)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          "Or as a child",
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.black87)),
-                    ],
-                  ),
-                  SizedBox(height: 25),
-                  CustomButton(
-                    text: "Scan QR Code",
-                    radius: 20,
-                    color: Colors.white.value,
-                    textColor: textColor.value,
-                    onClick: () {},
                   ),
                 ],
               ),
@@ -156,7 +113,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    usernameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();

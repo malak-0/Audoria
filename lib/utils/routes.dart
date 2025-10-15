@@ -7,6 +7,7 @@ import '../screens/child_screens/captured_image_screen.dart';
 import '../screens/child_screens/child_home_screen.dart';
 import '../screens/email_verification_screen.dart';
 import '../screens/parent_screens/insights_screen.dart';
+import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/child_screens/single_file_screen.dart';
 import '../screens/parent_screens/parent_home_screen.dart';
@@ -18,6 +19,7 @@ import '../screens/splash_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/': (context) => SplashScreen(),
+  'login': (context) => LoginScreen(),
   'register': (context) => RegisterScreen(),
   'verify': (context) => EmailVerificationScreen(),
   'parent_home': (context) => ParentHomeScreen(),

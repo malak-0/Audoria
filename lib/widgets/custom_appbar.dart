@@ -1,7 +1,11 @@
+import 'package:audoria/utils/firebase_helpers.dart';
 import 'package:flutter/material.dart';
 
-class CustomAppbar extends StatelessWidget {
+class CustomAppbar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppbar({super.key});
+
+  @override
+  Size get preferredSize => Size.fromHeight(80);
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +32,16 @@ class CustomAppbar extends StatelessWidget {
           style: TextStyle(color: Colors.white, fontSize: 30),
         ),
         centerTitle: true,
+
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: IconButton(
+              onPressed: () => logout(context),
+              icon: Icon(Icons.logout, size: 30, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

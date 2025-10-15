@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-void login(BuildContext context, String email, String password) async {
+Future<void> login(BuildContext context, String email, String password) async {
   String message;
   try {
     final _ = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -11,7 +11,7 @@ void login(BuildContext context, String email, String password) async {
       password: password,
     );
     message = "Login Successful";
-    navigatePushReplacement(context, "home");
+    navigatePushReplacement(context, "parent_home");
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
       message = 'No user found for that email.';
@@ -71,7 +71,7 @@ Future<void> checkVerification(BuildContext context, User? user) async {
   isEmailVerified = user?.emailVerified ?? false;
   if (isEmailVerified) {
     showSnackBar(context, "Email verified successfully!");
-    navigatePushReplacement(context, "home");
+    navigatePushReplacement(context, "parent_home");
   }
 }
 
