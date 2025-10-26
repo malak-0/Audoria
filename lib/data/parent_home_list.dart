@@ -9,6 +9,6 @@ final List<ParentHomeOptionsModel> parentHomeOptionsList = [
   ParentHomeOptionsModel(
     title: 'Files',
     iconPath: 'assets/animations/files.json',
-    routeName: 'saved_files',
+    routeName: 'all_lessons',
   ),
 ];

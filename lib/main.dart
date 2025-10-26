@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       routes: appRoutes,
-      initialRoute: 'scan_qr_code',
+      initialRoute: 'splashScreen',
     );
   }
 }
