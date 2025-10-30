@@ -38,7 +38,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_tts: ^4.2.3
-  http: ^1.1.0
+  http: ^1.2.2
   lottie: ^3.3.2
   mobile_scanner: ^7.1.2
   pocketbase: ^0.20.0
