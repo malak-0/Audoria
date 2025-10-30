@@ -1,9 +1,9 @@
+import 'package:audoria/utils/pocketbase_service.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
-import '../../services/pocketbase_service.dart';
 import '../../models/lesson_file_model.dart';
 
 class AllLessonsScreen extends StatefulWidget {

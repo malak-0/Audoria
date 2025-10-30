@@ -1,7 +1,7 @@
+import 'package:audoria/utils/constants.dart';
 import 'package:audoria/widgets/custom_appbar.dart';
 import 'package:audoria/widgets/custom_insight_item.dart';
 import 'package:audoria/widgets/custom_bottom_navbar.dart';
-import 'package:audoria/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/widgets/custom_insight_card.dart';
 
