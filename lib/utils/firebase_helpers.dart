@@ -11,7 +11,7 @@ Future<void> login(BuildContext context, String email, String password) async {
       password: password,
     );
     message = "Login Successful";
-    navigatePushReplacement(context, "parent_home");
+    navigatePushReplacement(context, "add_child");
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
       message = 'No user found for that email.';
@@ -71,7 +71,7 @@ Future<void> checkVerification(BuildContext context, User? user) async {
   isEmailVerified = user?.emailVerified ?? false;
   if (isEmailVerified) {
     showSnackBar(context, "Email verified successfully!");
-    navigatePushReplacement(context, "parent_home");
+    navigatePushReplacement(context, "add_child");
   }
 }
 

@@ -38,6 +38,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_tts: ^4.2.3
+  http: ^1.5.0
   lottie: ^3.3.2
   mobile_scanner: ^7.1.2
   qr_flutter: ^4.1.0
