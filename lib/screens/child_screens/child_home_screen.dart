@@ -1,6 +1,7 @@
-import 'package:audoria/services/voice_navigation/commands_handler.dart';
-import 'package:audoria/services/voice_navigation/listen.dart';
-import 'package:audoria/services/voice_navigation/speak.dart';
+import 'package:audoria/utils/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/voice_navigation/listen.dart';
+import 'package:audoria/utils/voice_navigation/speak.dart';
+import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_card.dart';
