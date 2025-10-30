@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
-import '../../widgets/custom_list_tile.dart';
+import '../../services/pocketbase_service.dart';
+import '../../models/lesson_file_model.dart';
 
 class AllLessonsScreen extends StatefulWidget {
   const AllLessonsScreen({super.key});
@@ -13,18 +14,50 @@ class AllLessonsScreen extends StatefulWidget {
 }
 
 class _AllLessonsScreenState extends State<AllLessonsScreen> {
-  List<Map<String, String>> lessons = [
-    {'title': 'Math - Lesson 1', 'date': '2 Feb, 2025'},
-    {'title': 'English - Lesson 3', 'date': '3 Feb, 2025'},
-    {'title': 'English - Lesson 4', 'date': '4 Feb, 2025'},
-    {'title': 'History - Lesson 2', 'date': '7 Feb, 2025'},
-    {'title': 'Science - Lesson 1', 'date': '10 Feb, 2025'},
-    {'title': 'Geographic - Lesson 3', 'date': '20 Feb, 2025'},
-  ];
+  final PocketBaseService _pocketBaseService = PocketBaseService();
+  List<LessonFile> lessons = [];
+  bool isLoading = true;
+  bool isServerConnected = false;
 
   PlatformFile? selectedFile;
   String? selectedFileName;
   bool isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      // Check if PocketBase server is running
+      isServerConnected = await _pocketBaseService.isServerRunning();
+
+      if (isServerConnected) {
+        await _loadLessons();
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error initializing data: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadLessons() async {
+    try {
+      final records = await _pocketBaseService.getLessonFiles();
+      setState(() {
+        lessons = records
+            .map((record) => LessonFile.fromPocketBase(record.data))
+            .toList();
+      });
+    } catch (e) {
+      _showErrorSnackBar('Error loading lessons: $e');
+    }
+  }
 
   Future<void> _pickFile() async {
     try {
@@ -43,12 +76,20 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
           'png',
         ],
         allowMultiple: false,
+        withData: true, // This ensures file bytes are loaded
       );
 
       if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+
+        if (file.bytes == null) {
+          _showErrorSnackBar('Failed to load file data. Please try again.');
+          return;
+        }
+
         setState(() {
-          selectedFile = result.files.first;
-          selectedFileName = selectedFile!.name;
+          selectedFile = file;
+          selectedFileName = file.name;
         });
       }
     } catch (e) {
@@ -62,22 +103,36 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       return;
     }
 
+    if (selectedFile!.bytes == null) {
+      _showErrorSnackBar(
+        'File data is not available. Please select the file again.',
+      );
+      return;
+    }
+
+    if (!isServerConnected) {
+      _showErrorSnackBar(
+        'PocketBase server is not running. Please start the server.',
+      );
+      return;
+    }
+
     setState(() {
       isUploading = true;
     });
 
     try {
-      // Simulate file upload process
-      await Future.delayed(const Duration(seconds: 2));
-
       // Generate lesson title from filename
       String lessonTitle = _generateLessonTitle(selectedFileName!);
-      String currentDate = _getCurrentDate();
 
-      // Add new lesson to the end of the list
-      setState(() {
-        lessons.add({'title': lessonTitle, 'date': currentDate});
-      });
+      // Upload file to PocketBase
+      await _pocketBaseService.uploadLessonFile(
+        file: selectedFile!,
+        title: lessonTitle,
+      );
+
+      // Reload lessons from server
+      await _loadLessons();
 
       // Reset file selection
       setState(() {
@@ -86,8 +141,10 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
         isUploading = false;
       });
 
-      Navigator.pop(context);
-      _showSuccessSnackBar('Lesson uploaded successfully!');
+      if (mounted) {
+        Navigator.pop(context);
+        _showSuccessSnackBar('Lesson uploaded successfully!');
+      }
     } catch (e) {
       setState(() {
         isUploading = false;
@@ -113,25 +170,6 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
     return words.join(' ');
   }
 
-  String _getCurrentDate() {
-    DateTime now = DateTime.now();
-    List<String> months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${now.day} ${months[now.month - 1]}, ${now.year}';
-  }
-
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -149,6 +187,88 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 3),
       ),
+    );
+  }
+
+  Future<void> _deleteLesson(LessonFile lesson) async {
+    if (!isServerConnected) {
+      _showErrorSnackBar('PocketBase server is not running.');
+      return;
+    }
+
+    try {
+      await _pocketBaseService.deleteLessonFile(lesson.id);
+      await _loadLessons();
+      _showSuccessSnackBar('Lesson deleted successfully!');
+    } catch (e) {
+      _showErrorSnackBar('Error deleting lesson: $e');
+    }
+  }
+
+  void _showDeleteDialog(LessonFile lesson) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Lesson'),
+          content: Text('Are you sure you want to delete "${lesson.title}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _deleteLesson(lesson);
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFileInfo(LessonFile lesson) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(lesson.title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Filename: ${lesson.filename}'),
+              const SizedBox(height: 8),
+              Text('Type: ${lesson.fileType.toUpperCase()}'),
+              const SizedBox(height: 8),
+              Text('Size: ${lesson.formattedFileSize}'),
+              const SizedBox(height: 8),
+              Text('Uploaded: ${lesson.formattedUploadDate}'),
+              if (lesson.fileUrl != null) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'File URL:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  lesson.fileUrl!,
+                  style: const TextStyle(fontSize: 12, color: Colors.blue),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -207,7 +327,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                                   BoxShadow(
                                     color: const Color(
                                       0xFF2E7D32,
-                                    ).withOpacity(0.3),
+                                    ).withValues(alpha: 0.3),
                                     spreadRadius: 1,
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
@@ -365,28 +485,126 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(child: CustomText.subtitle("All Lessons")),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Center(child: CustomText.subtitle("All Lessons")),
+                      if (!isServerConnected)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Offline Mode',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: lessons.length,
-                      itemBuilder: (context, index) {
-                        return Column(
-                          children: [
-                            CustomListTile(
-                              title: lessons[index]['title']!,
-                              subTitle: 'Uploaded: ${lessons[index]['date']}',
-                              filePage: Container(),
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
                             ),
-                            Divider(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              thickness: 1,
-                              height: 5,
+                          )
+                        : lessons.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No lessons uploaded yet.\nTap the + button to upload your first lesson!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54,
+                                fontFamily: 'Inter',
+                              ),
                             ),
-                          ],
-                        );
-                      },
-                    ),
+                          )
+                        : ListView.builder(
+                            itemCount: lessons.length,
+                            itemBuilder: (context, index) {
+                              final lesson = lessons[index];
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    title: Text(
+                                      lesson.title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Uploaded: ${lesson.formattedUploadDate}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black54,
+                                            fontFamily: 'Inter',
+                                          ),
+                                        ),
+                                        Text(
+                                          '${lesson.fileType.toUpperCase()} • ${lesson.formattedFileSize}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black38,
+                                            fontFamily: 'Inter',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: PopupMenuButton<String>(
+                                      onSelected: (value) {
+                                        if (value == 'delete') {
+                                          _showDeleteDialog(lesson);
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Delete'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    onTap: () {
+                                      // You can add file preview/download functionality here
+                                      _showFileInfo(lesson);
+                                    },
+                                  ),
+                                  Divider(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    thickness: 1,
+                                    height: 5,
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
