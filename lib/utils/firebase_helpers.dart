@@ -24,6 +24,15 @@ Future<void> login(BuildContext context, String email, String password) async {
   showSnackBar(context, message);
 }
 
+Future<String> getCurrentUsername(BuildContext context) async {
+  final user = FirebaseAuth.instance.currentUser;
+  final username = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user?.uid)
+      .get();
+  return username.data()?['username'];
+}
+
 Future<void> register(
   BuildContext context,
   String email,

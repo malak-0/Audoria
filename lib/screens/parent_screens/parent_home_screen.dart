@@ -1,3 +1,4 @@
+import 'package:audoria/utils/firebase_helpers.dart';
 import 'package:audoria/widgets/custom_appbar.dart';
 import 'package:audoria/widgets/custom_bottom_navbar.dart';
 import 'package:audoria/widgets/lottie_card.dart';
@@ -34,7 +35,12 @@ class ParentHomeScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.person_pin, size: 50),
                   const SizedBox(width: 8),
-                  CustomText.username(username),
+                  FutureBuilder(
+                    future: getCurrentUsername(context),
+                    builder: (context, snapshot) {
+                      return CustomText.username(snapshot.data ?? '');
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: 50),

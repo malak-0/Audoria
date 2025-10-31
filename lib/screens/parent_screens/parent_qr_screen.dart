@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:audoria/utils/child_signup_helper.dart';
+import 'package:audoria/utils/firebase_helpers.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -168,8 +169,12 @@ void _startLoginListener(String childUid) {
               children: [
                 Image.asset('assets/images/profile.png', width: 50, height: 50),
                 SizedBox(width: 10),
-                CustomText.username(widget.username),
-
+                FutureBuilder(
+                  future: getCurrentUsername(context),
+                  builder: (context, snapshot) {
+                    return CustomText.username(snapshot.data ?? '');
+                  },
+                ),
               ],
             ),
             Center(

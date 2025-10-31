@@ -2,6 +2,7 @@ import 'package:audoria/utils/voice_navigation/commands_handler.dart';
 import 'package:audoria/utils/voice_navigation/listen.dart';
 import 'package:audoria/utils/voice_navigation/speak.dart';
 import 'package:audoria/utils/constants.dart';
+import 'package:audoria/utils.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_text.dart';
@@ -83,15 +84,17 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                   CustomCard(
                     imagePath: 'assets/images/lesson.png',
                     label: 'LESSON',
-                    routeName: "all_lessons",
+                    routeName: "saved_files",
                   ),
                   const CustomCard(
                     imagePath: 'assets/images/camera.png',
                     label: 'CAMERA',
+                    routeName: "camera_capture",
                   ),
                   const CustomCard(
                     imagePath: 'assets/images/question.png',
                     label: 'ASK\nQUESTION',
+                    routeName: "questions",
                   ),
                 ],
               ),

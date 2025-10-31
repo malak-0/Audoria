@@ -1,6 +1,7 @@
 import 'package:audoria/utils/child_signup_helper.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/navigation_helper.dart';
+import 'package:audoria/utils/firebase_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:lottie/lottie.dart';
@@ -99,7 +100,12 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 children: [
                   const Icon(Icons.person_pin, size: 50),
                   const SizedBox(width: 8),
-                  CustomText.username(widget.username),
+                  FutureBuilder(
+                    future: getCurrentUsername(context),
+                    builder: (context, snapshot) {
+                      return CustomText.username(snapshot.data ?? '');
+                    },
+                  ),
                 ],
               ),
 
