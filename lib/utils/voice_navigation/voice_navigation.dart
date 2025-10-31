@@ -1,4 +1,4 @@
-import 'package:audoria/utils/routes.dart';
+import 'package:audoria/routes.dart';
 import 'package:flutter/material.dart';
 
 void navigateTo(BuildContext context, String routeName) {

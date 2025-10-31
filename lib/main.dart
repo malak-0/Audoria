@@ -1,5 +1,5 @@
 import 'package:audoria/utils/firebase_options.dart';
-import 'package:audoria/utils/routes.dart';
+import 'package:audoria/routes.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';

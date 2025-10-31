@@ -69,19 +69,24 @@ class LottieCard extends StatelessWidget {
         ),
       ];
 
-      return Container(
-        height: 190,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          color: Colors.white,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(21.0),
-          child: Row(
-            children: fileOptions!.isReversed
-                ? rowChildren.reversed.toList()
-                : rowChildren,
+      return GestureDetector(
+        onTap: fileOptions!.routeName != null
+            ? () => Navigator.pushNamed(context, fileOptions!.routeName!)
+            : null,
+        child: Container(
+          height: 190,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            color: Colors.white,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(21.0),
+            child: Row(
+              children: fileOptions!.isReversed
+                  ? rowChildren.reversed.toList()
+                  : rowChildren,
+            ),
           ),
         ),
       );
