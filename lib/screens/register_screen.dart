@@ -1,6 +1,6 @@
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/firebase_helpers.dart';
-import 'package:audoria/utils/ui_helpers.dart';
+import 'package:audoria/utils/navigation_helper.dart';
 import 'package:audoria/widgets/custom_button.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_text_field.dart';
@@ -116,7 +116,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   TextButton(
                     onPressed: () {
-                      navigatePush(context, "login");
+                      NavigationHelper.goTo(context, "login");
                     },
                     child: Text(
                       "Already have an account? Login",
@@ -143,7 +143,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     radius: 20,
                     color: Colors.white.value,
                     textColor: textColor.value,
-                    onClick: () {},
+                    onClick: () {
+                      NavigationHelper.goTo(context,"scan_qr_code");
+                    },
                   ),
                 ],
               ),

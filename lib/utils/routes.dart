@@ -30,7 +30,13 @@ final Map<String, WidgetBuilder> appRoutes = {
   'captured_image': (context) => CapturedImageScreen(),
   'insights': (context) => InsightsScreen(),
   'single_file': (context) => SingleFileScreen(),
-  'parent_qr': (context) => ParentQrScreen(),
+  'parent_qr': (context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ParentQrScreen(
+      childUid: args?['childUid'],
+      username: args?['username'] ?? 'username',
+    );
+  },
   'questions': (context) => QuestionsScreen(),
   'saved_files': (context) => SavedFilesScreen(),
   'scan_qr_code': (context) => ScanQrCodeScreen(),
