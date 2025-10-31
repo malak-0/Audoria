@@ -467,20 +467,12 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF030303),
       body: Column(
         children: [
           const CustomAppbar(),
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFF9BB9FF),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -35,9 +36,21 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate to next screen after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, 'parent_home');
+        _checkAuthAndNavigate();
       }
     });
+  }
+
+  void _checkAuthAndNavigate() {
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // User is logged in, navigate to home
+      Navigator.pushReplacementNamed(context, 'parent_home');
+    } else {
+      // User is not logged in, navigate to register
+      Navigator.pushReplacementNamed(context, 'single_file');
+    }
   }
 
   @override
