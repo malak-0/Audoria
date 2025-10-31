@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen>
       Navigator.pushReplacementNamed(context, 'parent_home');
     } else {
       // User is not logged in, navigate to register
-      Navigator.pushReplacementNamed(context, 'summarization');
+      Navigator.pushReplacementNamed(context, 'register');
     }
   }
 
