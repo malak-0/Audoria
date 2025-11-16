@@ -1,6 +1,6 @@
 import 'package:audoria/utils/constants.dart';
-import 'package:audoria/utils/firebase_helpers.dart';
-import 'package:audoria/utils/navigation_helper.dart';
+import 'package:audoria/utils/backend_services/firebase_helpers.dart';
+import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:audoria/widgets/custom_button.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_text_field.dart';

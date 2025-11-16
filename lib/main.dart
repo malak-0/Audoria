@@ -1,4 +1,4 @@
-import 'package:audoria/utils/firebase_options.dart';
+import 'package:audoria/utils/backend_services/firebase_options.dart';
 import 'package:audoria/routes.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       routes: appRoutes,
-      initialRoute: '/',
+      initialRoute: 'login',
     );
   }
 }

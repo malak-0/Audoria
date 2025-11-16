@@ -1,4 +1,8 @@
+import 'package:audoria/models/lesson_file_model.dart';
+import 'package:audoria/utils/backend_services/pocketbase_service.dart';
 import 'package:audoria/utils/constants.dart';
+import 'package:audoria/utils/navigation_services/navigation_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
@@ -12,32 +16,20 @@ class SavedFilesScreen extends StatefulWidget {
 }
 
 class _SavedFilesScreenState extends State<SavedFilesScreen> {
-  List<Map<String, dynamic>> savedFiles = [
-    {
-      'title': 'Math - Lesson 1',
-      'date': '2 Feb, 2025',
-      'type': 'PDF',
-      'size': '2.4 MB',
-    },
-    {
-      'title': 'English - Lesson 3',
-      'date': '3 Feb, 2025',
-      'type': 'DOC',
-      'size': '1.8 MB',
-    },
-    {
-      'title': 'History - Lesson 2',
-      'date': '7 Feb, 2025',
-      'type': 'PPT',
-      'size': '5.2 MB',
-    },
-    {
-      'title': 'Science - Lesson 1',
-      'date': '10 Feb, 2025',
-      'type': 'MP4',
-      'size': '12.3 MB',
-    },
-  ];
+  Future<List<LessonFile>> _loadFilesForChild() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final childUid = user?.uid; 
+    
+    if (childUid == null) return [];
+
+    try {
+      final records = await PocketBaseService().getFilesForChild(childUid);
+      return records.map((record) => LessonFile.fromPocketBase(record.data)).toList();
+    } catch (e) {
+      print('Error loading files for child: $e');
+      return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,175 +39,126 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
         children: [
           const CustomAppbar(),
           Expanded(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: CustomText.subtitle("Saved Files")),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: savedFiles.length,
-                      itemBuilder: (context, index) {
-                        return _buildFileCard(savedFiles[index]);
-                      },
+            child: FutureBuilder<List<LessonFile>>(
+              future: _loadFilesForChild(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No files shared with you yet.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
-                  ),
-                ],
-              ),
+                  );
+                }
+                
+                final files = snapshot.data!;
+                return ListView.builder(
+                  itemCount: files.length,
+                  itemBuilder: (context, index) => _buildFileCard(files[index]),
+                );
+              },
             ),
           ),
         ],
-      ),
-      floatingActionButton: Container(
-        width: 70,
-        height: 70,
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A237E),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.mic, color: Color(0xFF4CAF50), size: 32),
       ),
       bottomNavigationBar: const BottomNavBar(),
     );
   }
 
-  Widget _buildFileCard(Map<String, dynamic> file) {
+  Widget _buildFileCard(LessonFile file) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
+            blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _getFileTypeColor(file.fileType),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            _getFileTypeIcon(file.fileType),
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          file.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Inter',
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _getFileTypeColor(file['type']),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _getFileTypeIcon(file['type']),
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    file['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Added on ${file['date']}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${file['type']} • ${file['size']}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Play button
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Color.fromARGB(255, 72, 116, 220),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
+            Text('Uploaded: ${file.formattedUploadDate}'),
+            Text('${file.fileType} • ${file.formattedFileSize}'),
           ],
         ),
+        trailing: IconButton(
+          icon: const Icon(Icons.download, color: Colors.blue),
+          onPressed: () {
+            // Implement download functionality
+            _downloadFile(file);
+          },
+        ),
+        onTap: () {
+          NavigationHelper.goTo(context, 
+            'single_file_screen', 
+            arguments: {
+              'selectedFile': file,});
+        },
       ),
     );
   }
 
+  void _downloadFile(LessonFile file) {
+    // Implement file download logic
+    // You can use the fileUrl from PocketBase
+  }
+
+  void _openFile(LessonFile file) {
+    // Implement file opening logic based on file type
+  }
+
+  // Keep your existing _getFileTypeColor and _getFileTypeIcon methods
   Color _getFileTypeColor(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF':
-        return Colors.red;
-      case 'DOC':
-      case 'DOCX':
-        return Colors.blue;
-      case 'PPT':
-      case 'PPTX':
-        return Colors.orange;
-      case 'MP4':
-        return Colors.purple;
-      case 'MP3':
-        return Colors.green;
-      case 'JPG':
-      case 'PNG':
-        return Colors.pink;
-      default:
-        return Colors.grey;
+      case 'PDF': return Colors.red;
+      case 'DOC': return Colors.blue;
+      case 'PPT': return Colors.orange;
+      case 'MP4': return Colors.purple;
+      case 'MP3': return Colors.green;
+      case 'IMAGE': return Colors.pink;
+      default: return Colors.grey;
     }
   }
 
   IconData _getFileTypeIcon(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF':
-        return Icons.picture_as_pdf;
-      case 'DOC':
-      case 'DOCX':
-        return Icons.description;
-      case 'PPT':
-      case 'PPTX':
-        return Icons.slideshow;
-      case 'MP4':
-        return Icons.videocam;
-      case 'MP3':
-        return Icons.audiotrack;
-      case 'JPG':
-      case 'PNG':
-        return Icons.image;
-      default:
-        return Icons.insert_drive_file;
+      case 'PDF': return Icons.picture_as_pdf;
+      case 'DOC': return Icons.description;
+      case 'PPT': return Icons.slideshow;
+      case 'MP4': return Icons.videocam;
+      case 'MP3': return Icons.audiotrack;
+      case 'IMAGE': return Icons.image;
+      default: return Icons.insert_drive_file;
     }
   }
 }

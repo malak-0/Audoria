@@ -1,9 +1,52 @@
 import 'package:audoria/utils/constants.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/listen.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-class SummarizationScreen extends StatelessWidget {
-  const SummarizationScreen({super.key});
+class SummarizationScreen extends StatefulWidget {
+  final String summary;
+  const SummarizationScreen({super.key, required this.summary});
+
+  @override
+  State<SummarizationScreen> createState() => _SummarizationScreenState();
+}
+
+class _SummarizationScreenState extends State<SummarizationScreen> {
+  late SpeechFeedback tts;
+  late CommandHandler commandHandler;
+  final voiceService = VoiceService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoiceSystem();
+  }
+
+  Future<void> _initializeVoiceSystem() async {
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    voiceService.autoRestart = false;
+
+    voiceService.onResult = (recognizedText) {
+      commandHandler.handleCommand(context, 'saved_files', recognizedText);
+    };
+
+    await tts.speak(
+      widget.summary
+    );
+
+    voiceService.autoRestart = true;
+
+    await voiceService.init();
+  }
+
+  @override
+  void dispose() {
+    voiceService.uninitialize();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,10 +189,7 @@ class SummarizationScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        'Operating systems are essential software that manage computer hardware and provide services for computer programs. This lecture covers the fundamental concepts of operating systems, including process management, memory management, and file systems.\n\n'
-                        'The operating system acts as an intermediary between users and computer hardware, ensuring efficient resource allocation and providing a user-friendly interface. Key functions include managing CPU scheduling, memory allocation, and input/output operations.\n\n'
-                        'Process management involves creating, scheduling, and terminating processes. Memory management handles allocation and deallocation of memory spaces, while file systems organize and store data efficiently on storage devices.',
+                      Text(widget.summary,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -157,62 +197,6 @@ class SummarizationScreen extends StatelessWidget {
                           height: 1.6,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // Key Points Section
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: textColor.withOpacity(0.1),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: bgColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.star_outline,
-                              color: bgColor,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Key Points',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _buildKeyPoint('Operating systems manage hardware resources'),
-                      const SizedBox(height: 12),
-                      _buildKeyPoint('Process management handles task scheduling'),
-                      const SizedBox(height: 12),
-                      _buildKeyPoint('Memory management optimizes resource usage'),
-                      const SizedBox(height: 12),
-                      _buildKeyPoint('File systems organize data storage'),
                     ],
                   ),
                 ),
@@ -250,34 +234,4 @@ class SummarizationScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildKeyPoint(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 6),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: bgColor,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: textColor.withOpacity(0.8),
-              height: 1.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
-

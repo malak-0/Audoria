@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:audoria/utils/child_signup_helper.dart';
-import 'package:audoria/utils/navigation_helper.dart';
+import 'package:audoria/utils/backend_services/child_signup_helper.dart';
+import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

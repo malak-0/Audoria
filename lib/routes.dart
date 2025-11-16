@@ -1,3 +1,4 @@
+import 'package:audoria/models/lesson_file_model.dart';
 import 'package:flutter/material.dart';
 import 'screens/parent_screens/add_child_screen.dart';
 import 'screens/parent_screens/all_lessons_screen.dart';
@@ -30,7 +31,11 @@ final Map<String, WidgetBuilder> appRoutes = {
   'camera_capture': (context) => CameraCaptureScreen(),
   'captured_image': (context) => CapturedImageScreen(),
   'insights': (context) => InsightsScreen(),
-  'single_file': (context) => SingleFileScreen(),
+  'single_file_screen': (context) {
+      final arguments = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+      final selectedFile = arguments?['selectedFile'] as LessonFile;
+      return SingleFileScreen(selectedFile: selectedFile);
+    },
   'parent_qr': (context) {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -40,8 +45,12 @@ final Map<String, WidgetBuilder> appRoutes = {
     );
   },
   'questions': (context) => QuestionsScreen(),
-  'quizzes': (context) => QuizzesScreen(),
+  'quizes': (context) => QuizzesScreen(),
   'saved_files': (context) => SavedFilesScreen(),
   'scan_qr_code': (context) => ScanQrCodeScreen(),
-  'summarization': (context) => SummarizationScreen(),
+  'summarization': (context) {
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+      final summary = arguments is String ? arguments : '';
+      return SummarizationScreen(summary: summary);
+    },
 };

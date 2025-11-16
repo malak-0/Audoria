@@ -1,3 +1,4 @@
+import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:flutter/material.dart';
 
 class CustomCard extends StatelessWidget {
@@ -16,8 +17,7 @@ class CustomCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: routeName != null
-          ? () => Navigator.pushNamed(context, routeName!)
-          : null,
+          ? () => NavigationHelper.goTo(context, routeName!): null,
       child: Container(
         width: 140,
         height: 140,

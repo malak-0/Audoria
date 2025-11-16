@@ -1,5 +1,5 @@
 import 'package:audoria/utils/constants.dart';
-import 'package:audoria/utils/firebase_helpers.dart';
+import 'package:audoria/utils/backend_services/firebase_helpers.dart';
 import 'package:audoria/utils/ui_helpers.dart';
 import 'package:audoria/widgets/custom_button.dart';
 import 'package:audoria/widgets/custom_text.dart';
