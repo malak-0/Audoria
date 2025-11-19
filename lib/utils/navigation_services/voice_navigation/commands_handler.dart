@@ -49,9 +49,11 @@ class CommandHandler {
       }
 
       await tts.speak("Downloading file, please wait...");
-      
+
       // Download the file from the URL
-      final http.Response response = await http.get(Uri.parse(fileUrl)); // Use fileUrl parameter
+      final http.Response response = await http.get(
+        Uri.parse(fileUrl),
+      ); // Use fileUrl parameter
       if (response.statusCode != 200) {
         await tts.speak("Failed to download file.");
         return null;
@@ -70,18 +72,22 @@ class CommandHandler {
       String extractedText;
       final path = tempFile.path.toLowerCase(); // Use tempFile, not file
       if (path.endsWith('.pdf')) {
-        extractedText = await TextExtractionService.extractTextFromPDF(tempFile);
+        extractedText = await TextExtractionService.extractTextFromPDF(
+          tempFile,
+        );
       } else {
-        extractedText = await TextExtractionService.extractTextFromImage(tempFile);
+        extractedText = await TextExtractionService.extractTextFromImage(
+          tempFile,
+        );
       }
-      
+
       await tts.speak("Summarizing the content...");
       final summary = await geminiService.summarizeText(extractedText);
       await tts.speak("Summarization complete.");
-      
+
       // Clean up temporary file
       await tempFile.delete();
-      
+
       return summary;
     } catch (e) {
       await tts.speak("Sorry, I couldn't summarize the file.");

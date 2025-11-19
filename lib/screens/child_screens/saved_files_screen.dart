@@ -1,12 +1,11 @@
 import 'package:audoria/models/lesson_file_model.dart';
-import 'package:audoria/utils/backend_services/pocketbase_service.dart';
+import 'package:audoria/utils/backend_services/firestore_file_service.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
-import '../../widgets/custom_text.dart';
 
 class SavedFilesScreen extends StatefulWidget {
   const SavedFilesScreen({super.key});
@@ -16,6 +15,8 @@ class SavedFilesScreen extends StatefulWidget {
 }
 
 class _SavedFilesScreenState extends State<SavedFilesScreen> {
+  final FirestoreFileService _firestoreFileService = FirestoreFileService();
+  
   Future<List<LessonFile>> _loadFilesForChild() async {
     final user = FirebaseAuth.instance.currentUser;
     final childUid = user?.uid; 
@@ -23,8 +24,8 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     if (childUid == null) return [];
 
     try {
-      final records = await PocketBaseService().getFilesForChild(childUid);
-      return records.map((record) => LessonFile.fromPocketBase(record.data)).toList();
+      final filesData = await _firestoreFileService.getFilesForChild(childUid);
+      return filesData.map((fileData) => LessonFile.fromFirestore(fileData)).toList();
     } catch (e) {
       print('Error loading files for child: $e');
       return [];
@@ -130,11 +131,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
 
   void _downloadFile(LessonFile file) {
     // Implement file download logic
-    // You can use the fileUrl from PocketBase
-  }
-
-  void _openFile(LessonFile file) {
-    // Implement file opening logic based on file type
+    // File content is stored as base64 in fileContent field
   }
 
   // Keep your existing _getFileTypeColor and _getFileTypeIcon methods

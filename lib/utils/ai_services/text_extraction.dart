@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
@@ -13,9 +14,29 @@ class TextExtractionService {
     return result.text;
   }
 
+  static Future<String> extractTextFromImageBytes(Uint8List imageBytes) async {
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File('${tempDir.path}/temp_image_${DateTime.now().millisecondsSinceEpoch}.png');
+    await tempFile.writeAsBytes(imageBytes);
+    
+    try {
+      final text = await extractTextFromImage(tempFile);
+      return text;
+    } finally {
+      // Clean up temp file
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+    }
+  }
+
   static Future<String> extractTextFromPDF(File pdfFile) async {
     final bytes = await pdfFile.readAsBytes();
-    final doc = await PdfDocument.openData(bytes);
+    return await extractTextFromPDFBytes(bytes);
+  }
+
+  static Future<String> extractTextFromPDFBytes(Uint8List pdfBytes) async {
+    final doc = await PdfDocument.openData(pdfBytes);
     final tempDir = await getTemporaryDirectory();
     final textBuffer = StringBuffer();
 
@@ -33,6 +54,11 @@ class TextExtractionService {
       final text = await extractTextFromImage(file);
       textBuffer.writeln('--- Page $i ---\n$text\n');
       await page.close();
+      
+      // Clean up page image file
+      if (await file.exists()) {
+        await file.delete();
+      }
     }
 
     await doc.close();

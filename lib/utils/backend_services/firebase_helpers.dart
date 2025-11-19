@@ -122,6 +122,31 @@ void logout(BuildContext context) async {
   showSnackBar(context, "Logged Out");
 }
 
+// Get child username from subcollection
+Future<String> getChildUsername() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return "Child";
+
+  // Search through all users' children subcollections
+  // Children are stored at: users/{parentUid}/children/{childUid}
+  final allUsers = await FirebaseFirestore.instance.collection('users').get();
+
+  for (final userDoc in allUsers.docs) {
+    final childDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDoc.id)
+        .collection('children')
+        .doc(user.uid)
+        .get();
+
+    if (childDoc.exists) {
+      return childDoc.data()?['name'] ?? "Child";
+    }
+  }
+
+  return "Child";
+}
+
 // Update getCurrentUsername
 Future<String> getCurrentUsername() async {
   final user = FirebaseAuth.instance.currentUser;
@@ -137,17 +162,8 @@ Future<String> getCurrentUsername() async {
     return parentDoc.data()?['username'] ?? "Parent";
   }
 
-  // Check if child (direct collection)
-  final childDoc = await FirebaseFirestore.instance
-      .collection('children')
-      .doc(user.uid)
-      .get();
-
-  if (childDoc.exists) {
-    return childDoc.data()?['name'] ?? "Child";
-  }
-
-  return "User";
+  // Check if child using the new function
+  return await getChildUsername();
 }
 
 // Update getUserType
