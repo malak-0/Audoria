@@ -19,6 +19,8 @@ import 'screens/child_screens/scan_qr_code_screen.dart';
 import 'screens/child_screens/summarization_screen.dart';
 import 'screens/setting_child_screen.dart';
 import 'screens/setting_parent_screen.dart';
+import 'screens/child_screens/profile_child_screen.dart';
+import 'screens/parent_screens/profile_parent_screen.dart';
 import 'screens/splash_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
@@ -66,6 +68,21 @@ final Map<String, WidgetBuilder> appRoutes = {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     return SettingParent(
       childrenData: args?['childrenData'] as List<Map<String, String>>? ?? [],
+      parentName: args?['parentName'] as String? ?? 'Parent',
+      parentEmail: args?['parentEmail'] as String? ?? '',
+    );
+  },
+  'profile_child': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ProfileChildScreen(
+      childData: args?['childData'] as Map<String, String>?,
+    );
+  },
+  'profile_parent': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ProfileParentScreen(
       parentName: args?['parentName'] as String? ?? 'Parent',
       parentEmail: args?['parentEmail'] as String? ?? '',
     );

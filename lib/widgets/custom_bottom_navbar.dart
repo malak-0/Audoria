@@ -20,7 +20,10 @@ class _BottomNavBarState extends State<BottomNavBar> {
     final route = ModalRoute.of(context);
     if (route != null) {
       final routeName = route.settings.name;
-      if (routeName == 'setting_child' || routeName == 'setting_parent') {
+      if (routeName == 'profile_child' || routeName == 'profile_parent') {
+        _currentIndex = 0; // Profile icon
+      } else if (routeName == 'setting_child' ||
+          routeName == 'setting_parent') {
         _currentIndex = 2; // Settings icon
       } else if (routeName == 'child_home' || routeName == 'parent_home') {
         _currentIndex = 1; // Home icon
@@ -75,9 +78,10 @@ class _BottomNavBarState extends State<BottomNavBar> {
           });
         }
       } else {
-        // If we're on child settings, navigate to child home
-        if (currentRoute == 'setting_child') {
-          // We're on child settings, navigate to child home
+        // Unknown user type - try to navigate based on current screen context
+        if (currentRoute == 'setting_child' ||
+            currentRoute == 'profile_child') {
+          // We're on a child screen, navigate to child home
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -92,8 +96,9 @@ class _BottomNavBarState extends State<BottomNavBar> {
             });
             return;
           }
-        } else if (currentRoute == 'setting_parent') {
-          // We're on parent settings, navigate to parent home
+        } else if (currentRoute == 'setting_parent' ||
+            currentRoute == 'profile_parent') {
+          // We're on a parent screen, navigate to parent home
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -108,6 +113,18 @@ class _BottomNavBarState extends State<BottomNavBar> {
             });
             return;
           }
+        } else if (currentRoute == 'child_home') {
+          // Already on child home, just update index
+          setState(() {
+            _currentIndex = 1;
+          });
+          return;
+        } else if (currentRoute == 'parent_home') {
+          // Already on parent home, just update index
+          setState(() {
+            _currentIndex = 1;
+          });
+          return;
         } else {
           // Fallback: try child home
           if (context.mounted) {
@@ -204,10 +221,10 @@ class _BottomNavBarState extends State<BottomNavBar> {
         print('Current route: $currentRoute');
 
         // Determine based on current route
-        if (currentRoute == 'child_home') {
-          // We're on child home, navigate to child settings
+        if (currentRoute == 'child_home' || currentRoute == 'profile_child') {
+          // We're on a child screen, navigate to child settings
           try {
-            print('On child home, navigating to child settings...');
+            print('On child screen, navigating to child settings...');
             final childData = await getChildDataForSettings();
             if (context.mounted) {
               Navigator.pushNamed(
@@ -226,10 +243,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
           } catch (e) {
             print('Failed to navigate to child settings: $e');
           }
-        } else if (currentRoute == 'parent_home') {
-          // We're on parent home, navigate to parent settings
+        } else if (currentRoute == 'parent_home' ||
+            currentRoute == 'profile_parent') {
+          // We're on a parent screen, navigate to parent settings
           try {
-            print('On parent home, navigating to parent settings...');
+            print('On parent screen, navigating to parent settings...');
             final user = FirebaseAuth.instance.currentUser;
             final userData = await getCurrentUserData();
             final childrenData = await getParentChildrenForSettings();
@@ -327,13 +345,149 @@ class _BottomNavBarState extends State<BottomNavBar> {
     }
   }
 
+  Future<void> _handleProfileTap(BuildContext context) async {
+    try {
+      // Check if already on profile screen
+      final currentRoute = ModalRoute.of(context)?.settings.name;
+      if (currentRoute == 'profile_child' || currentRoute == 'profile_parent') {
+        // Already on profile screen, just update the index
+        setState(() {
+          _currentIndex = 0;
+        });
+        return;
+      }
+
+      final userType = await getUserType();
+
+      if (userType == 'child') {
+        // Navigate to child profile screen
+        final childData = await getChildDataForSettings();
+        if (context.mounted) {
+          Navigator.pushNamed(
+            context,
+            'profile_child',
+            arguments: {'childData': childData},
+          ).then((_) {
+            // Update index after navigation completes
+            if (mounted) {
+              setState(() {
+                _currentIndex = 0;
+              });
+            }
+          });
+        }
+      } else if (userType == 'parent') {
+        // Navigate to parent profile screen
+        final user = FirebaseAuth.instance.currentUser;
+        final userData = await getCurrentUserData();
+        if (context.mounted) {
+          Navigator.pushNamed(
+            context,
+            'profile_parent',
+            arguments: {
+              'parentName': userData?['username']?.toString() ?? 'Parent',
+              'parentEmail': user?.email ?? '',
+            },
+          ).then((_) {
+            // Update index after navigation completes
+            if (mounted) {
+              setState(() {
+                _currentIndex = 0;
+              });
+            }
+          });
+        }
+      } else {
+        // Unknown user type - try to navigate based on current screen context
+        if (currentRoute == 'child_home' || currentRoute == 'setting_child') {
+          // We're on a child screen, navigate to child profile
+          try {
+            final childData = await getChildDataForSettings();
+            if (context.mounted) {
+              Navigator.pushNamed(
+                context,
+                'profile_child',
+                arguments: {'childData': childData},
+              ).then((_) {
+                if (mounted) {
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                }
+              });
+              return;
+            }
+          } catch (e) {
+            print('Failed to navigate to child profile: $e');
+          }
+        } else if (currentRoute == 'parent_home' ||
+            currentRoute == 'setting_parent') {
+          // We're on a parent screen, navigate to parent profile
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            final userData = await getCurrentUserData();
+            if (context.mounted) {
+              Navigator.pushNamed(
+                context,
+                'profile_parent',
+                arguments: {
+                  'parentName': userData?['username']?.toString() ?? 'Parent',
+                  'parentEmail': user?.email ?? '',
+                },
+              ).then((_) {
+                if (mounted) {
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                }
+              });
+              return;
+            }
+          } catch (e) {
+            print('Failed to navigate to parent profile: $e');
+          }
+        } else {
+          // Fallback: try child profile (most common case)
+          try {
+            final childData = await getChildDataForSettings();
+            if (context.mounted) {
+              Navigator.pushNamed(
+                context,
+                'profile_child',
+                arguments: {'childData': childData},
+              ).then((_) {
+                if (mounted) {
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                }
+              });
+              return;
+            }
+          } catch (e) {
+            print('Failed to navigate to child profile: $e');
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error navigating to profile: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Update index based on current route
     final route = ModalRoute.of(context);
     if (route != null) {
       final routeName = route.settings.name;
-      if (routeName == 'setting_child' || routeName == 'setting_parent') {
+      if (routeName == 'profile_child' || routeName == 'profile_parent') {
+        _currentIndex = 0; // Profile icon
+      } else if (routeName == 'setting_child' ||
+          routeName == 'setting_parent') {
         _currentIndex = 2; // Settings icon
       } else if (routeName == 'child_home' || routeName == 'parent_home') {
         _currentIndex = 1; // Home icon
@@ -355,14 +509,16 @@ class _BottomNavBarState extends State<BottomNavBar> {
           _currentIndex = index;
         });
 
-        if (index == 1) {
+        if (index == 0) {
+          // Profile icon tapped
+          _handleProfileTap(context);
+        } else if (index == 1) {
           // Home icon tapped
           _handleHomeTap(context);
         } else if (index == 2) {
           // Settings icon tapped
           _handleSettingsTap(context);
         }
-        // Person icon (index 0) - will be implemented later
       },
     );
   }
