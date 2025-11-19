@@ -16,16 +16,18 @@ class SavedFilesScreen extends StatefulWidget {
 
 class _SavedFilesScreenState extends State<SavedFilesScreen> {
   final FirestoreFileService _firestoreFileService = FirestoreFileService();
-  
+
   Future<List<LessonFile>> _loadFilesForChild() async {
     final user = FirebaseAuth.instance.currentUser;
-    final childUid = user?.uid; 
-    
+    final childUid = user?.uid;
+
     if (childUid == null) return [];
 
     try {
       final filesData = await _firestoreFileService.getFilesForChild(childUid);
-      return filesData.map((fileData) => LessonFile.fromFirestore(fileData)).toList();
+      return filesData
+          .map((fileData) => LessonFile.fromFirestore(fileData))
+          .toList();
     } catch (e) {
       print('Error loading files for child: $e');
       return [];
@@ -55,7 +57,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
                     ),
                   );
                 }
-                
+
                 final files = snapshot.data!;
                 return ListView.builder(
                   itemCount: files.length,
@@ -120,10 +122,13 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
           },
         ),
         onTap: () {
-          NavigationHelper.goTo(context, 
-            'single_file_screen', 
-            arguments: {
-              'selectedFile': file,});
+          // Convert to map to preserve all fields during navigation
+          final fileMap = file.toFullMap();
+          NavigationHelper.goTo(
+            context,
+            'single_file_screen',
+            arguments: {'fileData': fileMap},
+          );
         },
       ),
     );
@@ -137,25 +142,39 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
   // Keep your existing _getFileTypeColor and _getFileTypeIcon methods
   Color _getFileTypeColor(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF': return Colors.red;
-      case 'DOC': return Colors.blue;
-      case 'PPT': return Colors.orange;
-      case 'MP4': return Colors.purple;
-      case 'MP3': return Colors.green;
-      case 'IMAGE': return Colors.pink;
-      default: return Colors.grey;
+      case 'PDF':
+        return Colors.red;
+      case 'DOC':
+        return Colors.blue;
+      case 'PPT':
+        return Colors.orange;
+      case 'MP4':
+        return Colors.purple;
+      case 'MP3':
+        return Colors.green;
+      case 'IMAGE':
+        return Colors.pink;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _getFileTypeIcon(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF': return Icons.picture_as_pdf;
-      case 'DOC': return Icons.description;
-      case 'PPT': return Icons.slideshow;
-      case 'MP4': return Icons.videocam;
-      case 'MP3': return Icons.audiotrack;
-      case 'IMAGE': return Icons.image;
-      default: return Icons.insert_drive_file;
+      case 'PDF':
+        return Icons.picture_as_pdf;
+      case 'DOC':
+        return Icons.description;
+      case 'PPT':
+        return Icons.slideshow;
+      case 'MP4':
+        return Icons.videocam;
+      case 'MP3':
+        return Icons.audiotrack;
+      case 'IMAGE':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 }

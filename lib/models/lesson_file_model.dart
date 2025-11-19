@@ -28,17 +28,9 @@ class LessonFile {
   });
 
   factory LessonFile.fromFirestore(Map<String, dynamic> data) {
-    print('Creating LessonFile from Firestore data...');
-    print('Raw data keys: ${data.keys.toList()}');
-
     final String filename = data['filename'] ?? 'Unknown File';
-    print('Filename: $filename');
-
     String title = data['title'] ?? _generateTitleFromFilename(filename);
-    print('Title: $title');
-
     String fileType = data['fileType'] ?? _getFileTypeFromFilename(filename);
-    print('File type: $fileType');
 
     DateTime uploadDate;
     if (data['uploadDate'] != null) {
@@ -48,10 +40,8 @@ class LessonFile {
       } else {
         uploadDate = DateTime.now();
       }
-      print('Upload date: $uploadDate');
     } else {
       uploadDate = DateTime.now();
-      print('Using current date for upload date');
     }
 
     List<String> sharedWith = [];
@@ -62,9 +52,11 @@ class LessonFile {
         sharedWith = List<String>.from(data['children']);
       }
     }
-    print('Shared with: $sharedWith');
 
-    final lesson = LessonFile(
+    final content = data['content'] as String?;
+    final fileContent = data['fileContent'] as String?;
+    
+    return LessonFile(
       id: data['id'] ?? '',
       title: title,
       filename: filename,
@@ -73,12 +65,9 @@ class LessonFile {
       firebaseUid: data['parentUid'] ?? '',
       sharedWith: sharedWith,
       uploadDate: uploadDate,
-      content: data['content'],
-      fileContent: data['fileContent'],
+      content: content,
+      fileContent: fileContent,
     );
-
-    print('Created LessonFile: ${lesson.title} (ID: ${lesson.id})');
-    return lesson;
   }
 
   static String _generateTitleFromFilename(String filename) {
@@ -120,6 +109,44 @@ class LessonFile {
       'date': formattedUploadDate,
       'sharedWith': sharedWith,
     };
+  }
+
+  // Full map including all fields for navigation
+  Map<String, dynamic> toFullMap() {
+    return {
+      'id': id,
+      'title': title,
+      'filename': filename,
+      'fileType': fileType,
+      'fileSize': fileSize,
+      'firebaseUid': firebaseUid,
+      'sharedWith': sharedWith,
+      'uploadDate': uploadDate.millisecondsSinceEpoch,
+      'fileUrl': fileUrl,
+      'content': content,
+      'fileContent': fileContent,
+    };
+  }
+
+  // Factory to create from full map (for navigation)
+  factory LessonFile.fromMap(Map<String, dynamic> map) {
+    return LessonFile(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      filename: map['filename'] ?? '',
+      fileType: map['fileType'] ?? 'OTHER',
+      fileSize: map['fileSize'] ?? 0,
+      firebaseUid: map['firebaseUid'] ?? '',
+      sharedWith: map['sharedWith'] != null 
+          ? List<String>.from(map['sharedWith']) 
+          : [],
+      uploadDate: map['uploadDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['uploadDate'] as int)
+          : DateTime.now(),
+      fileUrl: map['fileUrl'],
+      content: map['content'],
+      fileContent: map['fileContent'],
+    );
   }
 
   String get formattedFileSize {

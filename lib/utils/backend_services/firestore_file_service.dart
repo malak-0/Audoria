@@ -23,31 +23,37 @@ class FirestoreFileService {
       String extractedText = '';
       final fileName = file.name.toLowerCase();
 
+      // Get file type early (needed for debugging)
+      final fileType = _getFileTypeFromFilename(file.name);
+
       // Create temporary file for text extraction
       final tempDir = await getTemporaryDirectory();
       final tempFile = File('${tempDir.path}/${file.name}');
       await tempFile.writeAsBytes(file.bytes!);
 
-      if (fileName.endsWith('.pdf')) {
-        extractedText = await TextExtractionService.extractTextFromPDF(
-          tempFile,
-        );
-      } else if ([
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-      ].contains(fileName.split('.').last)) {
-        extractedText = await TextExtractionService.extractTextFromImage(
-          tempFile,
-        );
-      } else {
-        // For other file types, try to extract as text if possible
-        try {
-          extractedText = utf8.decode(file.bytes!);
-        } catch (e) {
-          extractedText = 'Text extraction not available for this file type';
+      try {
+        if (fileName.endsWith('.pdf')) {
+          extractedText = await TextExtractionService.extractTextFromPDF(
+            tempFile,
+          );
+        } else if ([
+          'jpg',
+          'jpeg',
+          'png',
+          'gif',
+        ].contains(fileName.split('.').last)) {
+          extractedText = await TextExtractionService.extractTextFromImage(
+            tempFile,
+          );
+        } else {
+          try {
+            extractedText = utf8.decode(file.bytes!);
+          } catch (e) {
+            extractedText = 'Text extraction not available for this file type';
+          }
         }
+      } catch (e) {
+        extractedText = 'Text extraction failed: $e';
       }
 
       // Clean up temporary file
@@ -56,14 +62,9 @@ class FirestoreFileService {
       // Convert file bytes to base64 string
       final fileContentBase64 = base64Encode(file.bytes!);
 
-      // Get file type
-      final fileType = _getFileTypeFromFilename(file.name);
-
-      // Generate title from filename
       final title = _generateTitleFromFilename(file.name);
 
-      // Save to Firestore
-      final docRef = await _firestore.collection('files').add({
+      final fileData = {
         'parentUid': parentUid,
         'children': children,
         'filename': file.name,
@@ -71,14 +72,14 @@ class FirestoreFileService {
         'fileType': fileType,
         'fileSize': file.size,
         'content': extractedText,
-        'fileContent': fileContentBase64, // File stored as base64 string
+        'fileContent': fileContentBase64,
         'uploadDate': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      };
 
+      final docRef = await _firestore.collection('files').add(fileData);
       return docRef.id;
     } catch (e) {
-      print('Error uploading file to Firestore: $e');
       rethrow;
     }
   }
@@ -96,8 +97,6 @@ class FirestoreFileService {
             .orderBy('uploadDate', descending: true)
             .get();
       } catch (e) {
-        // If orderBy fails (no index), get without ordering
-        print('OrderBy failed, fetching without order: $e');
         querySnapshot = await _firestore
             .collection('files')
             .where('parentUid', isEqualTo: parentUid)
@@ -121,7 +120,6 @@ class FirestoreFileService {
 
       return files;
     } catch (e) {
-      print('Error getting files by parent: $e');
       return [];
     }
   }
@@ -139,8 +137,6 @@ class FirestoreFileService {
             .orderBy('uploadDate', descending: true)
             .get();
       } catch (e) {
-        // If orderBy fails (no index), get without ordering
-        print('OrderBy failed, fetching without order: $e');
         querySnapshot = await _firestore
             .collection('files')
             .where('children', arrayContains: childUid)
@@ -164,31 +160,20 @@ class FirestoreFileService {
 
       return files;
     } catch (e) {
-      print('Error getting files for child: $e');
       return [];
     }
   }
 
   // Update file sharing (children array)
   Future<void> updateFileSharing(String fileId, List<String> children) async {
-    try {
-      await _firestore.collection('files').doc(fileId).update({
-        'children': children,
-      });
-    } catch (e) {
-      print('Error updating file sharing: $e');
-      rethrow;
-    }
+    await _firestore.collection('files').doc(fileId).update({
+      'children': children,
+    });
   }
 
   // Delete file
   Future<void> deleteFile(String fileId) async {
-    try {
-      await _firestore.collection('files').doc(fileId).delete();
-    } catch (e) {
-      print('Error deleting file: $e');
-      rethrow;
-    }
+    await _firestore.collection('files').doc(fileId).delete();
   }
 
   // Helper methods

@@ -180,6 +180,34 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       isUploading = true;
     });
 
+    // Show loading dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(
+                  'Uploading file...\nExtracting text...',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     try {
       final fileId = await _firestoreFileService.uploadFile(
         file: selectedFile!,
@@ -200,12 +228,17 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       await _loadParentFiles();
 
       if (mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
+        // Close upload dialog
         Navigator.pop(context);
         _showSuccessSnackBar('File uploaded successfully!');
       }
     } catch (e) {
       print('Upload error: $e');
       if (mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
         _showErrorSnackBar('Error uploading file: $e');
       }
     } finally {

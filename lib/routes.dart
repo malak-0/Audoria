@@ -37,8 +37,26 @@ final Map<String, WidgetBuilder> appRoutes = {
   'insights': (context) => InsightsScreen(),
   'single_file_screen': (context) {
     final arguments =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-    final selectedFile = arguments?['selectedFile'] as LessonFile;
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    LessonFile? selectedFile;
+
+    if (arguments != null) {
+      // Try new format with fileData map
+      if (arguments['fileData'] != null) {
+        final fileData = arguments['fileData'] as Map<String, dynamic>;
+        selectedFile = LessonFile.fromMap(fileData);
+      }
+      // Try old format with selectedFile object
+      else if (arguments['selectedFile'] != null) {
+        selectedFile = arguments['selectedFile'] as LessonFile;
+      }
+    }
+
+    if (selectedFile == null) {
+      // Return error screen or handle gracefully
+      return Scaffold(body: Center(child: Text('Error: File data not found')));
+    }
+
     return SingleFileScreen(selectedFile: selectedFile);
   },
   'parent_qr': (context) {
@@ -55,8 +73,21 @@ final Map<String, WidgetBuilder> appRoutes = {
   'scan_qr_code': (context) => ScanQrCodeScreen(),
   'summarization': (context) {
     final arguments = ModalRoute.of(context)?.settings.arguments;
-    final summary = arguments is String ? arguments : '';
-    return SummarizationScreen(summary: summary);
+
+    if (arguments is Map<String, dynamic>) {
+      if (arguments['fileData'] != null) {
+        final fileData = arguments['fileData'] as Map<String, dynamic>;
+        final selectedFile = LessonFile.fromMap(fileData);
+        return SummarizationScreen(selectedFile: selectedFile);
+      } else if (arguments['selectedFile'] != null) {
+        final selectedFile = arguments['selectedFile'] as LessonFile;
+        return SummarizationScreen(selectedFile: selectedFile);
+      }
+    } else if (arguments is String) {
+      return SummarizationScreen(summary: arguments);
+    }
+
+    return SummarizationScreen(summary: '');
   },
   'setting_child': (context) {
     final args =
