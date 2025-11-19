@@ -17,6 +17,8 @@ import 'screens/child_screens/quizzes_screen.dart';
 import 'screens/child_screens/saved_files_screen.dart';
 import 'screens/child_screens/scan_qr_code_screen.dart';
 import 'screens/child_screens/summarization_screen.dart';
+import 'screens/setting_child_screen.dart';
+import 'screens/setting_parent_screen.dart';
 import 'screens/splash_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
@@ -32,10 +34,11 @@ final Map<String, WidgetBuilder> appRoutes = {
   'captured_image': (context) => CapturedImageScreen(),
   'insights': (context) => InsightsScreen(),
   'single_file_screen': (context) {
-      final arguments = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-      final selectedFile = arguments?['selectedFile'] as LessonFile;
-      return SingleFileScreen(selectedFile: selectedFile);
-    },
+    final arguments =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final selectedFile = arguments?['selectedFile'] as LessonFile;
+    return SingleFileScreen(selectedFile: selectedFile);
+  },
   'parent_qr': (context) {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -49,8 +52,22 @@ final Map<String, WidgetBuilder> appRoutes = {
   'saved_files': (context) => SavedFilesScreen(),
   'scan_qr_code': (context) => ScanQrCodeScreen(),
   'summarization': (context) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      final summary = arguments is String ? arguments : '';
-      return SummarizationScreen(summary: summary);
-    },
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+    final summary = arguments is String ? arguments : '';
+    return SummarizationScreen(summary: summary);
+  },
+  'setting_child': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return SettingChild(childData: args?['childData'] as Map<String, String>?);
+  },
+  'setting_parent': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return SettingParent(
+      childrenData: args?['childrenData'] as List<Map<String, String>>? ?? [],
+      parentName: args?['parentName'] as String? ?? 'Parent',
+      parentEmail: args?['parentEmail'] as String? ?? '',
+    );
+  },
 };
