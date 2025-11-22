@@ -9,16 +9,14 @@ import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 class SingleFileScreen extends StatefulWidget {
-  final LessonFile selectedFile; 
+  final LessonFile selectedFile;
 
-  const SingleFileScreen({
-    super.key,
-    required this.selectedFile, 
-  });
+  const SingleFileScreen({super.key, required this.selectedFile});
 
   @override
   State<SingleFileScreen> createState() => _SingleFileScreenState();
 }
+
 class _SingleFileScreenState extends State<SingleFileScreen> {
   NavigationHelper navigationHelper = NavigationHelper();
   late SpeechFeedback tts;
@@ -37,11 +35,16 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
-      commandHandler.handleCommand(context, 'saved_files', recognizedText,arguments: widget.selectedFile.fileUrl!,);
+      commandHandler.handleCommand(
+        context,
+        'saved_files',
+        recognizedText,
+        arguments: widget.selectedFile.fileUrl!,
+      );
     };
 
     await tts.speak(
-    "now , would u like me to summarize the file, extract the main topics or generate a quiz to test yourself, i can also read the whole file to help u understand what its talking about.",
+      "now , would u like me to summarize the file, extract the main topics or generate a quiz to test yourself, i can also read the whole file to help u understand what its talking about.",
     );
 
     voiceService.autoRestart = true;
@@ -52,9 +55,11 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
   Future<void> _readFile() async {
     try {
       final content = widget.selectedFile.content;
-      
+
       if (content == null || content.isEmpty || content.trim().isEmpty) {
-        await tts.speak("Sorry, this file doesn't have readable text content. The file may not have been processed yet.");
+        await tts.speak(
+          "Sorry, this file doesn't have readable text content. The file may not have been processed yet.",
+        );
         return;
       }
 
@@ -72,6 +77,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
     voiceService.uninitialize();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,11 +105,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: textColor,
-                        size: 20,
-                      ),
+                      child: Icon(Icons.arrow_back, color: textColor, size: 20),
                     ),
                   ),
                 ],
@@ -166,7 +168,9 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: _getFileTypeColor(widget.selectedFile.fileType).withOpacity(0.1),
+                                    color: _getFileTypeColor(
+                                      widget.selectedFile.fileType,
+                                    ).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -174,7 +178,9 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: _getFileTypeColor(widget.selectedFile.fileType),
+                                      color: _getFileTypeColor(
+                                        widget.selectedFile.fileType,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -214,11 +220,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                       color: Colors.white.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.menu,
-                      color: textColor,
-                      size: 20,
-                    ),
+                    child: Icon(Icons.menu, color: textColor, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -259,7 +261,10 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                                 arguments: {'fileData': fileMap},
                               );
                             } else {
-                              NavigationHelper.goTo(context, fileOption.routeName!);
+                              NavigationHelper.goTo(
+                                context,
+                                fileOption.routeName!,
+                              );
                             }
                           }
                         },
