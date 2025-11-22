@@ -60,17 +60,6 @@ class LottieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (fileOptions != null) {
-      final rowChildren = [
-        Center(child: CustomText.username(fileOptions!.title)),
-        const Spacer(),
-        Lottie.asset(
-          fileOptions!.iconPath,
-          width: 150,
-          height: 150,
-          fit: BoxFit.fitWidth,
-        ),
-      ];
-
       return GestureDetector(
         onTap:
             onTap ??
@@ -88,8 +77,34 @@ class LottieCard extends StatelessWidget {
             padding: const EdgeInsets.all(21.0),
             child: Row(
               children: fileOptions!.isReversed
-                  ? rowChildren.reversed.toList()
-                  : rowChildren,
+                  ? [
+                      Lottie.asset(
+                        fileOptions!.iconPath,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.fitWidth,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Center(
+                          child: CustomText.username(fileOptions!.title),
+                        ),
+                      ),
+                    ]
+                  : [
+                      Expanded(
+                        child: Center(
+                          child: CustomText.username(fileOptions!.title),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Lottie.asset(
+                        fileOptions!.iconPath,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.fitWidth,
+                      ),
+                    ],
             ),
           ),
         ),

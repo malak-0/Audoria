@@ -1,5 +1,4 @@
 import 'package:audoria/utils/backend_services/firestore_file_service.dart';
-import 'package:audoria/widgets/custom_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
 import '../../models/lesson_file_model.dart';
+import '../../utils/constants.dart';
 
 class AllLessonsScreen extends StatefulWidget {
   const AllLessonsScreen({super.key});
@@ -41,7 +41,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   Future<void> _loadChildren() async {
     if (uid == null) return;
-    
+
     try {
       // Get children from the parent's subcollection
       final childrenSnapshot = await FirebaseFirestore.instance
@@ -49,22 +49,21 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
           .doc(uid)
           .collection('children')
           .get();
-      
-      List<Map<String, dynamic>> childrenList = childrenSnapshot.docs.map((doc) {
+
+      List<Map<String, dynamic>> childrenList = childrenSnapshot.docs.map((
+        doc,
+      ) {
         final data = doc.data();
         return {
           'uid': doc.id, // Child UID
           'name': data['name'] ?? 'Unknown',
         };
       }).toList();
-      
+
       setState(() {
         availableChildren = childrenList;
       });
-      
-      print('Loaded ${childrenList.length} children');
     } catch (e) {
-      print('Error loading children: $e');
       setState(() {
         availableChildren = [];
       });
@@ -73,14 +72,8 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   Future<void> _initializeData() async {
     try {
-      print('Starting _initializeData');
-      print('Current Firebase User UID: $uid');
-      print('Current User Email: ${user?.email}');
-
       if (uid != null) {
         await _loadParentFiles();
-      } else {
-        print('Cannot load files - UID is null');
       }
     } catch (e) {
       _showErrorSnackBar('Error initializing data: $e');
@@ -93,35 +86,23 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   Future<void> _loadParentFiles() async {
     try {
-      print('Loading parent files from Firestore...');
       final filesData = await _firestoreFileService.getFilesByParent(uid!);
-      
-      print('Processing ${filesData.length} files...');
+
       List<LessonFile> loadedLessons = [];
-      
+
       for (var fileData in filesData) {
         try {
-          print('Processing file: ${fileData['id']}');
           final lesson = LessonFile.fromFirestore(fileData);
           loadedLessons.add(lesson);
-          print('Loaded file: ${lesson.title} (ID: ${lesson.id})');
         } catch (e) {
-          print('Error processing file ${fileData['id']}: $e');
+          // Skip invalid files
         }
       }
-      
+
       setState(() {
         lessons = loadedLessons;
       });
-      
-      print('Loaded ${lessons.length} lessons successfully');
-      
-      if (lessons.isEmpty) {
-        print('No files found for UID: $uid');
-      }
-      
     } catch (e) {
-      print('Error loading files: $e');
       _showErrorSnackBar('Error loading files: $e');
     }
   }
@@ -143,7 +124,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
           'png',
         ],
         allowMultiple: false,
-        withData: true, 
+        withData: true,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -196,10 +177,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                 Text(
                   'Uploading file...\nExtracting text...',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                  ),
+                  style: const TextStyle(fontSize: 16, fontFamily: 'Inter'),
                 ),
               ],
             ),
@@ -209,21 +187,19 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
     }
 
     try {
-      final fileId = await _firestoreFileService.uploadFile(
+      await _firestoreFileService.uploadFile(
         file: selectedFile!,
         parentUid: firebaseUid,
         children: selectedChildren,
       );
 
-      print('File uploaded with ID: $fileId');
-      
       // Clear selection before reloading
       setState(() {
         selectedChildren.clear();
         selectedFile = null;
         selectedFileName = null;
       });
-      
+
       // Reload files after upload
       await _loadParentFiles();
 
@@ -235,7 +211,6 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
         _showSuccessSnackBar('File uploaded successfully!');
       }
     } catch (e) {
-      print('Upload error: $e');
       if (mounted) {
         // Close loading dialog
         Navigator.pop(context);
@@ -250,16 +225,21 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
     }
   }
 
-  Future<void> _updateFileSharing(LessonFile lesson, List<String> childrenToShareWith) async {
+  Future<void> _updateFileSharing(
+    LessonFile lesson,
+    List<String> childrenToShareWith,
+  ) async {
     try {
-      await _firestoreFileService.updateFileSharing(lesson.id, childrenToShareWith);
+      await _firestoreFileService.updateFileSharing(
+        lesson.id,
+        childrenToShareWith,
+      );
       await _loadParentFiles();
       _showSuccessSnackBar('Sharing updated successfully!');
     } catch (e) {
       _showErrorSnackBar('Error updating sharing: $e');
     }
   }
-
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -370,7 +350,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   void _showSharingDialog(LessonFile lesson) {
     final currentlyShared = List<String>.from(lesson.sharedWith);
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -386,7 +366,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                   itemBuilder: (context, index) {
                     final child = availableChildren[index];
                     final isSelected = currentlyShared.contains(child['uid']);
-                    
+
                     return CheckboxListTile(
                       title: Text(child['name']),
                       value: isSelected,
@@ -451,7 +431,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
+
                     // File selection
                     GestureDetector(
                       onTap: isUploading
@@ -478,7 +458,9 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                           boxShadow: selectedFile != null
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF2E7D32).withOpacity(0.3),
+                                    color: const Color(
+                                      0xFF2E7D32,
+                                    ).withOpacity(0.3),
                                     spreadRadius: 1,
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
@@ -522,7 +504,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                         ),
                       ),
                     ),
-                    
+
                     if (selectedFile != null) ...[
                       const SizedBox(height: 10),
                       const Text(
@@ -535,7 +517,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ],
-                    
+
                     // Children selection (only show if there are children available)
                     if (availableChildren.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -561,8 +543,10 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                             itemCount: availableChildren.length,
                             itemBuilder: (context, index) {
                               final child = availableChildren[index];
-                              final isSelected = selectedChildren.contains(child['uid']);
-                              
+                              final isSelected = selectedChildren.contains(
+                                child['uid'],
+                              );
+
                               return CheckboxListTile(
                                 title: Text(child['name']),
                                 value: isSelected,
@@ -581,7 +565,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                         ),
                       ),
                     ],
-                    
+
                     const SizedBox(height: 25),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -591,8 +575,8 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                             backgroundColor: isUploading
                                 ? Colors.grey
                                 : selectedFile != null
-                                    ? const Color.fromARGB(255, 60, 116, 212)
-                                    : const Color(0xFF9BB9FF),
+                                ? const Color.fromARGB(255, 60, 116, 212)
+                                : const Color(0xFF9BB9FF),
                             elevation: selectedFile != null ? 8 : 2,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -666,145 +650,133 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const CustomAppbar(),
           Expanded(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header Section
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Center(child: CustomText.subtitle("My Files")),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.folder, color: textColor, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'My Files',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${lessons.length}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   Expanded(
                     child: isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Loading your files...',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: textColor.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : lessons.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No files uploaded yet.\nTap the + button to upload your first file!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black54,
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                              )
-                            : ListView.builder(
-                                itemCount: lessons.length,
-                                itemBuilder: (context, index) {
-                                  final lesson = lessons[index];
-                                  return Column(
-                                    children: [
-                                      ListTile(
-                                        leading: Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: _getFileTypeColor(lesson.fileType),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            _getFileTypeIcon(lesson.fileType),
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        title: Text(
-                                          lesson.title,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            fontFamily: 'Inter',
-                                          ),
-                                        ),
-                                        subtitle: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Uploaded: ${lesson.formattedUploadDate}',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.black54,
-                                                fontFamily: 'Inter',
-                                              ),
-                                            ),
-                                            Text(
-                                              '${lesson.fileType.toUpperCase()} • ${lesson.formattedFileSize} • Shared with ${lesson.sharedWith.length} child(ren)',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.black38,
-                                                fontFamily: 'Inter',
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        trailing: PopupMenuButton<String>(
-                                          onSelected: (value) {
-                                            if (value == 'delete') {
-                                              _showDeleteDialog(lesson);
-                                            } else if (value == 'share') {
-                                              _showSharingDialog(lesson);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            if (availableChildren.isNotEmpty)
-                                              const PopupMenuItem(
-                                                value: 'share',
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.share,
-                                                      color: Colors.blue,
-                                                    ),
-                                                    SizedBox(width: 8),
-                                                    Text('Manage Sharing'),
-                                                  ],
-                                                ),
-                                              ),
-                                            const PopupMenuItem(
-                                              value: 'delete',
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.delete,
-                                                    color: Colors.red,
-                                                  ),
-                                                  SizedBox(width: 8),
-                                                  Text('Delete'),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        onTap: () {
-                                          _showFileInfo(lesson);
-                                        },
-                                      ),
-                                      Divider(
-                                        color: Colors.black.withOpacity(0.1),
-                                        thickness: 1,
-                                        height: 5,
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: textColor.withOpacity(0.1),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 5),
                                       ),
                                     ],
-                                  );
-                                },
-                              ),
+                                  ),
+                                  child: Icon(
+                                    Icons.upload_file,
+                                    size: 64,
+                                    color: textColor.withOpacity(0.5),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Text(
+                                  'No files uploaded yet',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap the + button to upload your first file',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: textColor.withOpacity(0.6),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: lessons.length,
+                            itemBuilder: (context, index) {
+                              final lesson = lessons[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildFileCard(lesson),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -812,40 +784,265 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
           ),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20, right: 10),
-        child: FloatingActionButton(
-          backgroundColor: Colors.black,
-          onPressed: _showUploadDialog,
-          child: const Icon(Icons.add, color: Colors.white, size: 32),
+      floatingActionButton: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [textColor, textColor.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: textColor.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _showUploadDialog,
+            borderRadius: BorderRadius.circular(32),
+            child: const Icon(Icons.add, color: Colors.white, size: 32),
+          ),
         ),
       ),
       bottomNavigationBar: const BottomNavBar(),
     );
   }
 
+  Widget _buildFileCard(LessonFile lesson) {
+    final fileColor = _getFileTypeColor(lesson.fileType);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showFileInfo(lesson),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // File Type Icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [fileColor, fileColor.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: fileColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _getFileTypeIcon(lesson.fileType),
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // File Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                        letterSpacing: 0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: textColor.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          lesson.formattedUploadDate,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: textColor.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: fileColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            lesson.fileType,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: fileColor,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.description,
+                              size: 14,
+                              color: textColor.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              lesson.formattedFileSize,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textColor.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.people,
+                              size: 14,
+                              color: textColor.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${lesson.sharedWith.length}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textColor.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Menu Button
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: textColor.withOpacity(0.6)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _showDeleteDialog(lesson);
+                  } else if (value == 'share') {
+                    _showSharingDialog(lesson);
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (availableChildren.isNotEmpty)
+                    PopupMenuItem(
+                      value: 'share',
+                      child: Row(
+                        children: [
+                          Icon(Icons.share, color: bgColor, size: 20),
+                          const SizedBox(width: 12),
+                          const Text('Manage Sharing'),
+                        ],
+                      ),
+                    ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete, color: Colors.red, size: 20),
+                        const SizedBox(width: 12),
+                        const Text('Delete'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // Helper methods for file type colors and icons
   Color _getFileTypeColor(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF': return Colors.red;
-      case 'DOC': return Colors.blue;
-      case 'PPT': return Colors.orange;
-      case 'MP4': return Colors.purple;
-      case 'MP3': return Colors.green;
-      case 'IMAGE': return Colors.pink;
-      default: return Colors.grey;
+      case 'PDF':
+        return Colors.red;
+      case 'DOC':
+        return Colors.blue;
+      case 'PPT':
+        return Colors.orange;
+      case 'MP4':
+        return Colors.purple;
+      case 'MP3':
+        return Colors.green;
+      case 'IMAGE':
+        return Colors.pink;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _getFileTypeIcon(String type) {
     switch (type.toUpperCase()) {
-      case 'PDF': return Icons.picture_as_pdf;
-      case 'DOC': return Icons.description;
-      case 'PPT': return Icons.slideshow;
-      case 'MP4': return Icons.videocam;
-      case 'MP3': return Icons.audiotrack;
-      case 'IMAGE': return Icons.image;
-      default: return Icons.insert_drive_file;
+      case 'PDF':
+        return Icons.picture_as_pdf;
+      case 'DOC':
+        return Icons.description;
+      case 'PPT':
+        return Icons.slideshow;
+      case 'MP4':
+        return Icons.videocam;
+      case 'MP3':
+        return Icons.audiotrack;
+      case 'IMAGE':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 }

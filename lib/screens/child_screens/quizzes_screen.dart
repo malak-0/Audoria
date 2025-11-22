@@ -392,7 +392,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                               ],
                             ),
                             child: Lottie.asset(
-                              'assets/animations/quizzes.json',
+                              'assets/animations/quizes.json',
                               fit: BoxFit.contain,
                             ),
                           ),

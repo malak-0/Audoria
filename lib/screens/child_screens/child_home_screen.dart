@@ -5,8 +5,8 @@ import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/backend_services/firebase_helpers.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_card.dart';
-import '../../widgets/custom_text.dart';
 import '../../widgets/custom_bottom_navbar.dart';
+import '../../widgets/custom_appbar.dart';
 
 class ChildHomeScreen extends StatefulWidget {
   const ChildHomeScreen({super.key});
@@ -54,40 +54,124 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF9BB9FF),
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+      backgroundColor: bgColor,
+      appBar: const CustomAppbar(showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: FutureBuilder<String>(
-                        future: getChildUsername(),
-                        builder: (context, snapshot) {
-                          final username = snapshot.data ?? 'Child';
-                          return CustomText.username('Hello, $username');
-                        },
+                // Welcome Section with enhanced design
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: textColor.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
                       ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [bgColor, bgColor.withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: textColor.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: FutureBuilder<String>(
+                          future: getChildUsername(),
+                          builder: (context, snapshot) {
+                            final username = snapshot.data ?? 'Child';
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Welcome back,',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: textColor.withOpacity(0.6),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  username,
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    color: textColor,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // Subtitle with icon
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.school, color: textColor, size: 20),
                     ),
-                    const CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, color: textColor, size: 28),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Let\'s study together',
+                      style: TextStyle(
+                        fontSize: 22,
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 40),
-                CustomText.subtitle('Lets study together'),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 20,
+                const SizedBox(height: 25),
+                // Cards Grid with improved layout
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 18,
+                  crossAxisSpacing: 18,
+                  childAspectRatio: 0.85,
                   children: [
                     CustomCard(
                       imagePath: 'assets/images/lesson.png',
@@ -106,7 +190,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
               ],
             ),
           ),
