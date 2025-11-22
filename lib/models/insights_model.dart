@@ -9,6 +9,8 @@ class InsightsModel {
   final int wrongAnswers;
   final DateTime completedAt;
   final DateTime createdAt;
+  final String? fileId; // ID of the file this quiz/insight is related to
+  final String? fileName; // Name of the file for display
 
   InsightsModel({
     this.id,
@@ -19,6 +21,8 @@ class InsightsModel {
     required this.wrongAnswers,
     required this.completedAt,
     required this.createdAt,
+    this.fileId,
+    this.fileName,
   });
 
   // Calculate accuracy percentage
@@ -40,6 +44,8 @@ class InsightsModel {
       'wrongAnswers': wrongAnswers,
       'completedAt': Timestamp.fromDate(completedAt),
       'createdAt': Timestamp.fromDate(createdAt),
+      if (fileId != null) 'fileId': fileId,
+      if (fileName != null) 'fileName': fileName,
     };
   }
 
@@ -56,6 +62,8 @@ class InsightsModel {
       completedAt:
           (data['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      fileId: data['fileId'] as String?,
+      fileName: data['fileName'] as String?,
     );
   }
 
@@ -78,6 +86,8 @@ class InsightsModel {
           : map['createdAt'] is DateTime
           ? map['createdAt'] as DateTime
           : DateTime.now(),
+      fileId: map['fileId'] as String?,
+      fileName: map['fileName'] as String?,
     );
   }
 }

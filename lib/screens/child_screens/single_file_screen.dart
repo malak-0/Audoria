@@ -77,50 +77,83 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: Column(
-        children: [
-          PageHeader(
-            title: widget.selectedFile.title,
-            subTitle: '${widget.selectedFile.fileType} • ${widget.selectedFile.formattedFileSize}',
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(25.0),
-              child: ListView.builder(
-                itemCount: fileOptionsList.length,
-                itemBuilder: (context, index) {
-                  final fileOption = fileOptionsList[index];
-                  return Column(
-                    children: [
-                      LottieCard(
-                        fileOptions: fileOption,
-                        onTap: () async {
-                          if (fileOption.title.toLowerCase() == 'read file') {
-                            await _readFile();
-                          } else if (fileOption.routeName != null) {
-                            if (fileOption.routeName == 'summarization') {
-                              // Convert to map to preserve all fields during navigation
-                              final fileMap = widget.selectedFile.toFullMap();
-                              NavigationHelper.goTo(
-                                context,
-                                fileOption.routeName!,
-                                arguments: {'fileData': fileMap},
-                              );
-                            } else {
-                              NavigationHelper.goTo(context, fileOption.routeName!);
-                            }
-                          }
-                        },
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Back Button
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: textColor.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      if (index != fileOptionsList.length - 1)
-                        const SizedBox(height: 20),
-                    ],
-                  );
-                },
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: textColor,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            PageHeader(
+              title: widget.selectedFile.title,
+              subTitle: '${widget.selectedFile.fileType} • ${widget.selectedFile.formattedFileSize}',
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: ListView.builder(
+                  itemCount: fileOptionsList.length,
+                  itemBuilder: (context, index) {
+                    final fileOption = fileOptionsList[index];
+                    return Column(
+                      children: [
+                        LottieCard(
+                          fileOptions: fileOption,
+                          onTap: () async {
+                            if (fileOption.title.toLowerCase() == 'read file') {
+                              await _readFile();
+                            } else if (fileOption.routeName != null) {
+                              if (fileOption.routeName == 'summarization' ||
+                                  fileOption.routeName == 'quizzes') {
+                                // Convert to map to preserve all fields during navigation
+                                final fileMap = widget.selectedFile.toFullMap();
+                                NavigationHelper.goTo(
+                                  context,
+                                  fileOption.routeName!,
+                                  arguments: {'fileData': fileMap},
+                                );
+                              } else {
+                                NavigationHelper.goTo(context, fileOption.routeName!);
+                              }
+                            }
+                          },
+                        ),
+                        if (index != fileOptionsList.length - 1)
+                          const SizedBox(height: 20),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

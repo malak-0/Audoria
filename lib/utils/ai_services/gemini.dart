@@ -68,10 +68,32 @@ $text''';
     }
   }
 
-  Future<String> generateQuiz(String topic) async {
+  Future<List<Map<String, dynamic>>> generateQuizFromContent(
+    String content,
+  ) async {
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
     );
+
+    final prompt =
+        '''Based on the following content, generate exactly 5 multiple-choice questions. Each question must have exactly 3 options (A, B, C) and one correct answer.
+
+IMPORTANT: Return ONLY a valid JSON array in this exact format:
+[
+  {
+    "question": "Question text here",
+    "options": ["Option A", "Option B", "Option C"],
+    "correctAnswerIndex": 0
+  },
+  ...
+]
+
+Where correctAnswerIndex is 0, 1, or 2 (the index of the correct option in the options array).
+
+Content:
+$content
+
+Return ONLY the JSON array, no other text:''';
 
     final response = await http.post(
       url,
@@ -80,7 +102,7 @@ $text''';
         'contents': [
           {
             'parts': [
-              {'text': 'Generate 5 multiple-choice questions about $topic.'},
+              {'text': prompt},
             ],
           },
         ],
@@ -89,9 +111,27 @@ $text''';
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['candidates'][0]['content']['parts'][0]['text'] as String;
+      final responseText =
+          data['candidates'][0]['content']['parts'][0]['text'] as String;
+
+      // Clean the response - remove markdown code blocks if present
+      String cleanedText = responseText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.substring(7);
+      }
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.substring(3);
+      }
+      if (cleanedText.endsWith('```')) {
+        cleanedText = cleanedText.substring(0, cleanedText.length - 3);
+      }
+      cleanedText = cleanedText.trim();
+
+      // Parse JSON
+      final List<dynamic> questionsJson = jsonDecode(cleanedText);
+      return questionsJson.map((q) => q as Map<String, dynamic>).toList();
     } else {
-      throw Exception('Failed to generate response: ${response.body}');
+      throw Exception('Failed to generate quiz: ${response.body}');
     }
   }
 }
