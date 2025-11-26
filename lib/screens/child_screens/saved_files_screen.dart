@@ -2,11 +2,13 @@ import 'package:audoria/models/lesson_file_model.dart';
 import 'package:audoria/utils/backend_services/pocketbase_service.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/navigation_services/navigation_helper.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/listen.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
-import '../../widgets/custom_text.dart';
 
 class SavedFilesScreen extends StatefulWidget {
   const SavedFilesScreen({super.key});
@@ -16,6 +18,34 @@ class SavedFilesScreen extends StatefulWidget {
 }
 
 class _SavedFilesScreenState extends State<SavedFilesScreen> {
+  late SpeechFeedback tts;
+  late CommandHandler commandHandler;
+  final voiceService = VoiceService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoiceSystem();
+  }
+    Future<void> _initializeVoiceSystem() async {
+      tts = SpeechFeedback();
+      commandHandler = CommandHandler(tts: tts);
+      voiceService.autoRestart = false;
+
+      voiceService.onResult = (recognizedText) {
+        commandHandler.handleCommand(context, 'saved_files', recognizedText);
+      };
+
+      voiceService.autoRestart = true;
+
+      await voiceService.init();
+    }
+
+  @override
+  void dispose() {
+    voiceService.uninitialize();
+    super.dispose();
+  }
   Future<List<LessonFile>> _loadFilesForChild() async {
     final user = FirebaseAuth.instance.currentUser;
     final childUid = user?.uid; 
@@ -131,10 +161,6 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
   void _downloadFile(LessonFile file) {
     // Implement file download logic
     // You can use the fileUrl from PocketBase
-  }
-
-  void _openFile(LessonFile file) {
-    // Implement file opening logic based on file type
   }
 
   // Keep your existing _getFileTypeColor and _getFileTypeIcon methods
