@@ -120,3 +120,6 @@ ehthumbs.db
 # Backup files
 *.backup
 *.bak
+
+# environment variables
+*.env
