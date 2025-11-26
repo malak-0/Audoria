@@ -9,12 +9,14 @@ class LottieCard extends StatelessWidget {
   final FileOptionsModel? fileOptions;
   final ImageOptionsModel? imageOptions;
   final ParentHomeOptionsModel? parentHomeOptions;
+  final VoidCallback? onTap; // Allow parent to override tap behavior
 
   const LottieCard({
     super.key,
     this.fileOptions,
     this.imageOptions,
     this.parentHomeOptions,
+    this.onTap,
   });
 
   Widget buildCustomContainer({
@@ -70,9 +72,11 @@ class LottieCard extends StatelessWidget {
       ];
 
       return GestureDetector(
-        onTap: fileOptions!.routeName != null
-            ? () => Navigator.pushNamed(context, fileOptions!.routeName!)
-            : null,
+        onTap:
+            onTap ??
+            (fileOptions!.routeName != null
+                ? () => Navigator.pushNamed(context, fileOptions!.routeName!)
+                : null),
         child: Container(
           height: 190,
           width: double.infinity,

@@ -4,7 +4,13 @@ import 'package:flutter/material.dart';
 void navigateTo(BuildContext context, String routeName, {Object? arguments}){
   final routeBuilder = appRoutes[routeName];
   if (routeBuilder != null) {
-    Navigator.push(context, MaterialPageRoute(builder: routeBuilder));
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: routeBuilder,
+        settings: RouteSettings(arguments: arguments),
+      ),
+    );
   } else {
     print('Route not found: $routeName');
   }

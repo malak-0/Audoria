@@ -17,6 +17,10 @@ import 'screens/child_screens/quizzes_screen.dart';
 import 'screens/child_screens/saved_files_screen.dart';
 import 'screens/child_screens/scan_qr_code_screen.dart';
 import 'screens/child_screens/summarization_screen.dart';
+import 'screens/setting_child_screen.dart';
+import 'screens/setting_parent_screen.dart';
+import 'screens/child_screens/profile_child_screen.dart';
+import 'screens/parent_screens/profile_parent_screen.dart';
 import 'screens/splash_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
@@ -32,10 +36,29 @@ final Map<String, WidgetBuilder> appRoutes = {
   'captured_image': (context) => CapturedImageScreen(),
   'insights': (context) => InsightsScreen(),
   'single_file_screen': (context) {
-      final arguments = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-      final selectedFile = arguments?['selectedFile'] as LessonFile;
-      return SingleFileScreen(selectedFile: selectedFile);
-    },
+    final arguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    LessonFile? selectedFile;
+
+    if (arguments != null) {
+      // Try new format with fileData map
+      if (arguments['fileData'] != null) {
+        final fileData = arguments['fileData'] as Map<String, dynamic>;
+        selectedFile = LessonFile.fromMap(fileData);
+      }
+      // Try old format with selectedFile object
+      else if (arguments['selectedFile'] != null) {
+        selectedFile = arguments['selectedFile'] as LessonFile;
+      }
+    }
+
+    if (selectedFile == null) {
+      // Return error screen or handle gracefully
+      return Scaffold(body: Center(child: Text('Error: File data not found')));
+    }
+
+    return SingleFileScreen(selectedFile: selectedFile);
+  },
   'parent_qr': (context) {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -49,8 +72,50 @@ final Map<String, WidgetBuilder> appRoutes = {
   'saved_files': (context) => SavedFilesScreen(),
   'scan_qr_code': (context) => ScanQrCodeScreen(),
   'summarization': (context) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      final summary = arguments is String ? arguments : '';
-      return SummarizationScreen(summary: summary);
-    },
+    final arguments = ModalRoute.of(context)?.settings.arguments;
+
+    if (arguments is Map<String, dynamic>) {
+      if (arguments['fileData'] != null) {
+        final fileData = arguments['fileData'] as Map<String, dynamic>;
+        final selectedFile = LessonFile.fromMap(fileData);
+        return SummarizationScreen(selectedFile: selectedFile);
+      } else if (arguments['selectedFile'] != null) {
+        final selectedFile = arguments['selectedFile'] as LessonFile;
+        return SummarizationScreen(selectedFile: selectedFile);
+      }
+    } else if (arguments is String) {
+      return SummarizationScreen(summary: arguments);
+    }
+
+    return SummarizationScreen(summary: '');
+  },
+  'setting_child': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return SettingChild(childData: args?['childData'] as Map<String, String>?);
+  },
+  'setting_parent': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return SettingParent(
+      childrenData: args?['childrenData'] as List<Map<String, String>>? ?? [],
+      parentName: args?['parentName'] as String? ?? 'Parent',
+      parentEmail: args?['parentEmail'] as String? ?? '',
+    );
+  },
+  'profile_child': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ProfileChildScreen(
+      childData: args?['childData'] as Map<String, String>?,
+    );
+  },
+  'profile_parent': (context) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ProfileParentScreen(
+      parentName: args?['parentName'] as String? ?? 'Parent',
+      parentEmail: args?['parentEmail'] as String? ?? '',
+    );
+  },
 };

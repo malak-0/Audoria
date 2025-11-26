@@ -7,8 +7,10 @@ Future<void> login(BuildContext context, String email, String password) async {
   String message = "";
 
   try {
-    final credential = await FirebaseAuth.instance
-        .signInWithEmailAndPassword(email: email, password: password);
+    final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
     final userUid = credential.user!.uid;
 
@@ -25,12 +27,10 @@ Future<void> login(BuildContext context, String email, String password) async {
     }
 
     // Check if user is a child by searching through all users' children subcollections
-    final allUsers = await FirebaseFirestore.instance
-        .collection('users')
-        .get();
+    final allUsers = await FirebaseFirestore.instance.collection('users').get();
 
     bool isChild = false;
-    
+
     for (final userDoc in allUsers.docs) {
       final childDoc = await FirebaseFirestore.instance
           .collection('users')
@@ -38,7 +38,7 @@ Future<void> login(BuildContext context, String email, String password) async {
           .collection('children')
           .doc(userUid)
           .get();
-          
+
       if (childDoc.exists) {
         isChild = true;
         break; // Exit loop early if found
@@ -63,7 +63,11 @@ Future<void> login(BuildContext context, String email, String password) async {
 }
 
 Future<void> register(
-    BuildContext context, String email, String password, String username) async {
+  BuildContext context,
+  String email,
+  String password,
+  String username,
+) async {
   String message = "";
 
   try {
@@ -74,11 +78,11 @@ Future<void> register(
         .collection('users')
         .doc(credential.user!.uid)
         .set({
-      "userId": credential.user!.uid,
-      "email": email,
-      "username": username,
-      "createdAt": FieldValue.serverTimestamp(),
-    });
+          "userId": credential.user!.uid,
+          "email": email,
+          "username": username,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
 
     await credential.user!.sendEmailVerification();
     navigatePushReplacement(context, "add_child");
@@ -118,6 +122,31 @@ void logout(BuildContext context) async {
   showSnackBar(context, "Logged Out");
 }
 
+// Get child username from subcollection
+Future<String> getChildUsername() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return "Child";
+
+  // Search through all users' children subcollections
+  // Children are stored at: users/{parentUid}/children/{childUid}
+  final allUsers = await FirebaseFirestore.instance.collection('users').get();
+
+  for (final userDoc in allUsers.docs) {
+    final childDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDoc.id)
+        .collection('children')
+        .doc(user.uid)
+        .get();
+
+    if (childDoc.exists) {
+      return childDoc.data()?['name'] ?? "Child";
+    }
+  }
+
+  return "Child";
+}
+
 // Update getCurrentUsername
 Future<String> getCurrentUsername() async {
   final user = FirebaseAuth.instance.currentUser;
@@ -133,17 +162,8 @@ Future<String> getCurrentUsername() async {
     return parentDoc.data()?['username'] ?? "Parent";
   }
 
-  // Check if child (direct collection)
-  final childDoc = await FirebaseFirestore.instance
-      .collection('children')
-      .doc(user.uid)
-      .get();
-
-  if (childDoc.exists) {
-    return childDoc.data()?['name'] ?? "Child";
-  }
-
-  return "User";
+  // Check if child using the new function
+  return await getChildUsername();
 }
 
 // Update getUserType
@@ -157,6 +177,22 @@ Future<String> getUserType() async {
       .get();
 
   if (parentDoc.exists) return "parent";
+
+  // Check if user is a child by searching through all users' children subcollections
+  final allUsers = await FirebaseFirestore.instance.collection('users').get();
+
+  for (final userDoc in allUsers.docs) {
+    final childDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDoc.id)
+        .collection('children')
+        .doc(user.uid)
+        .get();
+
+    if (childDoc.exists) {
+      return "child";
+    }
+  }
 
   final childDoc = await FirebaseFirestore.instance
       .collection('children')
@@ -209,6 +245,84 @@ Future<Map<String, dynamic>?> getChildParent(String childId) async {
   }
   return null;
 }
+
+// Get child data for settings screen
+Future<Map<String, String>?> getChildDataForSettings() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return null;
+
+  // Try direct children collection first
+  final childDoc = await FirebaseFirestore.instance
+      .collection('children')
+      .doc(user.uid)
+      .get();
+
+  if (childDoc.exists) {
+    final data = childDoc.data();
+    if (data != null) {
+      return {
+        'name': data['name']?.toString() ?? '',
+        'age': data['age']?.toString() ?? '',
+        'grade': data['grade']?.toString() ?? '',
+        'school': data['school']?.toString() ?? '',
+      };
+    }
+  }
+
+  // Try searching in users' children subcollections
+  final allUsers = await FirebaseFirestore.instance.collection('users').get();
+
+  for (final userDoc in allUsers.docs) {
+    final childDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userDoc.id)
+        .collection('children')
+        .doc(user.uid)
+        .get();
+
+    if (childDoc.exists) {
+      final data = childDoc.data();
+      if (data != null) {
+        return {
+          'name': data['name']?.toString() ?? '',
+          'age': data['age']?.toString() ?? '',
+          'grade': data['grade']?.toString() ?? '',
+          'school': data['school']?.toString() ?? '',
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+// Get parent children list for settings screen
+Future<List<Map<String, String>>> getParentChildrenForSettings() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return [];
+
+  try {
+    final childrenSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('children')
+        .get();
+
+    return childrenSnapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'name': data['name']?.toString() ?? '',
+        'age': data['age']?.toString() ?? '',
+        'grade': data['grade']?.toString() ?? '',
+        'school': data['school']?.toString() ?? '',
+      };
+    }).toList();
+  } catch (e) {
+    print('Error fetching parent children: $e');
+    return [];
+  }
+}
+
 String _handleAuthError(FirebaseAuthException e) {
   switch (e.code) {
     case 'invalid-email':

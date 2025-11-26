@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class LessonFile {
   final String id;
   final String title;
@@ -8,6 +10,8 @@ class LessonFile {
   final List<String> sharedWith;
   final DateTime uploadDate;
   final String? fileUrl;
+  final String? content; // Extracted text content
+  final String? fileContent; // Base64 encoded file content
 
   LessonFile({
     required this.id,
@@ -19,87 +23,72 @@ class LessonFile {
     required this.sharedWith,
     required this.uploadDate,
     this.fileUrl,
+    this.content,
+    this.fileContent,
   });
 
-  factory LessonFile.fromPocketBase(Map<String, dynamic> data) {
-    print('Creating LessonFile from PocketBase data...');
-    print('Raw data keys: ${data.keys.toList()}');
-    
-    final String filename = data['file'] ?? 'Unknown File';
-    print('Filename: $filename');
-
-    String title = _generateTitleFromFilename(filename);
-    print('Generated title: $title');
-
-    String fileType = _getFileTypeFromFilename(filename);
-    print('File type: $fileType');
+  factory LessonFile.fromFirestore(Map<String, dynamic> data) {
+    final String filename = data['filename'] ?? 'Unknown File';
+    String title = data['title'] ?? _generateTitleFromFilename(filename);
+    String fileType = data['fileType'] ?? _getFileTypeFromFilename(filename);
 
     DateTime uploadDate;
-    if (data['created'] != null) {
-      uploadDate = DateTime.parse(data['created']);
-      print('Upload date: $uploadDate');
+    if (data['uploadDate'] != null) {
+      final timestamp = data['uploadDate'];
+      if (timestamp is Timestamp) {
+        uploadDate = timestamp.toDate();
+      } else {
+        uploadDate = DateTime.now();
+      }
     } else {
       uploadDate = DateTime.now();
-      print('Using current date for upload date');
     }
 
     List<String> sharedWith = [];
-    if (data['sharedWith'] != null) {
-      if (data['sharedWith'] is String) {
-        // If it's a string, convert to list
-        sharedWith = [data['sharedWith']];
-      } else if (data['sharedWith'] is List) {
-        // If it's already a list, use it directly
-        sharedWith = List<String>.from(data['sharedWith']);
+    if (data['children'] != null) {
+      if (data['children'] is String) {
+        sharedWith = [data['children']];
+      } else if (data['children'] is List) {
+        sharedWith = List<String>.from(data['children']);
       }
     }
-    print('Shared with: $sharedWith');
 
-    String? fileUrl;
-    final String fileId = data['id'] ?? '';
-    if (fileId.isNotEmpty && filename.isNotEmpty) {
-      fileUrl = 'http://127.0.0.1:8091/api/files/parent_files/$fileId/$filename';
-      print('Constructed file URL: $fileUrl');
-    } else {
-      print('Cannot construct file URL: missing ID or filename');
-    }
+    final content = data['content'] as String?;
+    final fileContent = data['fileContent'] as String?;
     
-    final lesson = LessonFile(
+    return LessonFile(
       id: data['id'] ?? '',
       title: title,
       filename: filename,
       fileType: fileType,
       fileSize: data['fileSize'] ?? 0,
-      firebaseUid: data['firebase_uid'] ?? '',
+      firebaseUid: data['parentUid'] ?? '',
       sharedWith: sharedWith,
       uploadDate: uploadDate,
-      fileUrl: fileUrl,
+      content: content,
+      fileContent: fileContent,
     );
-    
-    print('Created LessonFile: ${lesson.title} (ID: ${lesson.id})');
-    print('Firebase UID in record: ${lesson.firebaseUid}');
-    return lesson;
   }
 
   static String _generateTitleFromFilename(String filename) {
     if (filename.isEmpty) return 'Untitled File';
 
     String nameWithoutExt = filename.split('.').first;
-    
+
     nameWithoutExt = nameWithoutExt.replaceAll('_', ' ').replaceAll('-', ' ');
-    
+
     List<String> words = nameWithoutExt.split(' ');
     words = words.map((word) {
       if (word.isEmpty) return word;
       return word[0].toUpperCase() + word.substring(1).toLowerCase();
     }).toList();
-    
+
     return words.join(' ');
   }
 
   static String _getFileTypeFromFilename(String filename) {
     if (filename.isEmpty) return 'OTHER';
-    
+
     final ext = filename.split('.').last.toLowerCase();
     if (ext == 'pdf') return 'PDF';
     if (['doc', 'docx'].contains(ext)) return 'DOC';
@@ -122,6 +111,44 @@ class LessonFile {
     };
   }
 
+  // Full map including all fields for navigation
+  Map<String, dynamic> toFullMap() {
+    return {
+      'id': id,
+      'title': title,
+      'filename': filename,
+      'fileType': fileType,
+      'fileSize': fileSize,
+      'firebaseUid': firebaseUid,
+      'sharedWith': sharedWith,
+      'uploadDate': uploadDate.millisecondsSinceEpoch,
+      'fileUrl': fileUrl,
+      'content': content,
+      'fileContent': fileContent,
+    };
+  }
+
+  // Factory to create from full map (for navigation)
+  factory LessonFile.fromMap(Map<String, dynamic> map) {
+    return LessonFile(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      filename: map['filename'] ?? '',
+      fileType: map['fileType'] ?? 'OTHER',
+      fileSize: map['fileSize'] ?? 0,
+      firebaseUid: map['firebaseUid'] ?? '',
+      sharedWith: map['sharedWith'] != null 
+          ? List<String>.from(map['sharedWith']) 
+          : [],
+      uploadDate: map['uploadDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['uploadDate'] as int)
+          : DateTime.now(),
+      fileUrl: map['fileUrl'],
+      content: map['content'],
+      fileContent: map['fileContent'],
+    );
+  }
+
   String get formattedFileSize {
     if (fileSize < 1024) return '$fileSize B';
     if (fileSize < 1048576) return '${(fileSize / 1024).toStringAsFixed(1)} KB';
@@ -131,6 +158,7 @@ class LessonFile {
   String get formattedUploadDate {
     return '${uploadDate.day}/${uploadDate.month}/${uploadDate.year}';
   }
+
   // Add this to your LessonFile class
   LessonFile copyWith({
     String? id,
@@ -142,6 +170,8 @@ class LessonFile {
     List<String>? sharedWith,
     DateTime? uploadDate,
     String? fileUrl,
+    String? content,
+    String? fileContent,
   }) {
     return LessonFile(
       id: id ?? this.id,
@@ -153,6 +183,8 @@ class LessonFile {
       sharedWith: sharedWith ?? this.sharedWith,
       uploadDate: uploadDate ?? this.uploadDate,
       fileUrl: fileUrl ?? this.fileUrl,
+      content: content ?? this.content,
+      fileContent: fileContent ?? this.fileContent,
     );
   }
 }

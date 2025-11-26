@@ -50,6 +50,24 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
     await voiceService.init();
   }
 
+  Future<void> _readFile() async {
+    try {
+      final content = widget.selectedFile.content;
+      
+      if (content == null || content.isEmpty || content.trim().isEmpty) {
+        await tts.speak("Sorry, this file doesn't have readable text content. The file may not have been processed yet.");
+        return;
+      }
+
+      await tts.stop();
+      await tts.speak("Reading the file now.");
+      await Future.delayed(const Duration(milliseconds: 800));
+      await tts.speak(content);
+    } catch (e) {
+      await tts.speak("Sorry, I couldn't read the file. Please try again.");
+    }
+  }
+
   @override
   void dispose() {
     voiceService.uninitialize();
@@ -74,13 +92,26 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                   final fileOption = fileOptionsList[index];
                   return Column(
                     children: [
-                      GestureDetector(
-                        onTap: (){
-                           if (fileOption.routeName != null) {
-                            NavigationHelper.goTo(context, fileOption.routeName!);
+                      LottieCard(
+                        fileOptions: fileOption,
+                        onTap: () async {
+                          if (fileOption.title.toLowerCase() == 'read file') {
+                            await _readFile();
+                          } else if (fileOption.routeName != null) {
+                            if (fileOption.routeName == 'summarization') {
+                              // Convert to map to preserve all fields during navigation
+                              final fileMap = widget.selectedFile.toFullMap();
+                              NavigationHelper.goTo(
+                                context,
+                                fileOption.routeName!,
+                                arguments: {'fileData': fileMap},
+                              );
+                            } else {
+                              NavigationHelper.goTo(context, fileOption.routeName!);
+                            }
                           }
                         },
-                        child: LottieCard(fileOptions: fileOption)),
+                      ),
                       if (index != fileOptionsList.length - 1)
                         const SizedBox(height: 20),
                     ],

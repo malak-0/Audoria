@@ -1,4 +1,4 @@
-import 'package:audoria/utils/backend_services/pocketbase_service.dart';
+import 'package:audoria/utils/backend_services/firestore_file_service.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,12 +16,11 @@ class AllLessonsScreen extends StatefulWidget {
 }
 
 class _AllLessonsScreenState extends State<AllLessonsScreen> {
-  final PocketBaseService _pocketBaseService = PocketBaseService();
+  final FirestoreFileService _firestoreFileService = FirestoreFileService();
   final user = FirebaseAuth.instance.currentUser;
   String? get uid => user?.uid;
   List<LessonFile> lessons = [];
   bool isLoading = true;
-  bool isServerConnected = false;
 
   PlatformFile? selectedFile;
   String? selectedFileName;
@@ -41,17 +40,35 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
   }
 
   Future<void> _loadChildren() async {
-    final childrenSnapshot = await FirebaseFirestore.instance
-        .collection('parents')
-        .doc(uid)
-        .collection('children')
-        .get();
-    setState(() {
-      availableChildren = childrenSnapshot.docs.map((doc) => {
-        'uid': doc.id,
-        'name': doc.data()['name'],
+    if (uid == null) return;
+    
+    try {
+      // Get children from the parent's subcollection
+      final childrenSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('children')
+          .get();
+      
+      List<Map<String, dynamic>> childrenList = childrenSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'uid': doc.id, // Child UID
+          'name': data['name'] ?? 'Unknown',
+        };
       }).toList();
-    });
+      
+      setState(() {
+        availableChildren = childrenList;
+      });
+      
+      print('Loaded ${childrenList.length} children');
+    } catch (e) {
+      print('Error loading children: $e');
+      setState(() {
+        availableChildren = [];
+      });
+    }
   }
 
   Future<void> _initializeData() async {
@@ -60,16 +77,11 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       print('Current Firebase User UID: $uid');
       print('Current User Email: ${user?.email}');
 
-      // Check if PocketBase server is running
-      print('Checking PocketBase server connection...');
-      isServerConnected = await _pocketBaseService.isServerRunning();
-      print('Server connected: $isServerConnected');
-
-      if (isServerConnected && uid != null) {
+      if (uid != null) {
         await _loadParentFiles();
-    } else {
-      print('Cannot load files - Server: $isServerConnected, UID: $uid');
-    }
+      } else {
+        print('Cannot load files - UID is null');
+      }
     } catch (e) {
       _showErrorSnackBar('Error initializing data: $e');
     } finally {
@@ -81,22 +93,20 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   Future<void> _loadParentFiles() async {
     try {
-      print('Loading parent files...');
-      final records = await _pocketBaseService.getFilesByParent(uid!);
+      print('Loading parent files from Firestore...');
+      final filesData = await _firestoreFileService.getFilesByParent(uid!);
       
-      print('Processing ${records.length} records...');
+      print('Processing ${filesData.length} files...');
       List<LessonFile> loadedLessons = [];
       
-      for (var record in records) {
+      for (var fileData in filesData) {
         try {
-          print('Processing record: ${record.id}');
-          final lesson = LessonFile.fromPocketBase(record.data);
-          final fileUrl = _pocketBaseService.getFileUrl(record);
-          final lessonWithUrl = lesson.copyWith(fileUrl: fileUrl);
-          loadedLessons.add(lessonWithUrl);
+          print('Processing file: ${fileData['id']}');
+          final lesson = LessonFile.fromFirestore(fileData);
+          loadedLessons.add(lesson);
           print('Loaded file: ${lesson.title} (ID: ${lesson.id})');
         } catch (e) {
-          print('Error processing record ${record.id}: $e');
+          print('Error processing file ${fileData['id']}: $e');
         }
       }
       
@@ -106,13 +116,8 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       
       print('Loaded ${lessons.length} lessons successfully');
       
-      // If no lessons found, show a more specific message
       if (lessons.isEmpty) {
         print('No files found for UID: $uid');
-        print('This could mean:');
-        print('The UID in PocketBase doesn\'t match your current Firebase UID');
-        print('No files have been uploaded yet');
-        print('There\'s a mismatch in the firebase_uid field');
       }
       
     } catch (e) {
@@ -165,10 +170,9 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       return;
     }
 
-    if (!isServerConnected) {
-      _showErrorSnackBar(
-        'PocketBase server is not running. Please start the server.',
-      );
+    final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+    if (firebaseUid == null) {
+      _showErrorSnackBar('User not authenticated');
       return;
     }
 
@@ -176,39 +180,71 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
       isUploading = true;
     });
 
+    // Show loading dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                Text(
+                  'Uploading file...\nExtracting text...',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     try {
-      String lessonTitle = _generateLessonTitle(selectedFileName ?? 'Untitled');
-      final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
-
-      if (firebaseUid == null) {
-        throw Exception('User not authenticated');
-      }
-
-      await _pocketBaseService.uploadLessonFile(
+      final fileId = await _firestoreFileService.uploadFile(
         file: selectedFile!,
-        title: lessonTitle,
-        firebaseUid: firebaseUid,
-        sharedWith: selectedChildren, 
+        parentUid: firebaseUid,
+        children: selectedChildren,
       );
 
+      print('File uploaded with ID: $fileId');
+      
+      // Clear selection before reloading
+      setState(() {
+        selectedChildren.clear();
+        selectedFile = null;
+        selectedFileName = null;
+      });
+      
+      // Reload files after upload
       await _loadParentFiles();
 
       if (mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
+        // Close upload dialog
         Navigator.pop(context);
         _showSuccessSnackBar('File uploaded successfully!');
-        
-        setState(() {
-          selectedChildren.clear();
-        });
       }
     } catch (e) {
-      _showErrorSnackBar('Error uploading file: $e');
+      print('Upload error: $e');
+      if (mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
+        _showErrorSnackBar('Error uploading file: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {
           isUploading = false;
-          selectedFile = null;
-          selectedFileName = null;
         });
       }
     }
@@ -216,7 +252,7 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
 
   Future<void> _updateFileSharing(LessonFile lesson, List<String> childrenToShareWith) async {
     try {
-      await _pocketBaseService.updateFileSharing(lesson.id, childrenToShareWith);
+      await _firestoreFileService.updateFileSharing(lesson.id, childrenToShareWith);
       await _loadParentFiles();
       _showSuccessSnackBar('Sharing updated successfully!');
     } catch (e) {
@@ -224,20 +260,6 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
     }
   }
 
-  String _generateLessonTitle(String fileName) {
-    String nameWithoutExt = fileName.split('.').first;
-
-    List<String> words = nameWithoutExt.split(' ');
-    words = words
-        .map(
-          (word) => word.isNotEmpty
-              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-              : word,
-        )
-        .toList();
-
-    return words.join(' ');
-  }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -260,13 +282,8 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
   }
 
   Future<void> _deleteLesson(LessonFile lesson) async {
-    if (!isServerConnected) {
-      _showErrorSnackBar('PocketBase server is not running.');
-      return;
-    }
-
     try {
-      await _pocketBaseService.deleteLessonFile(lesson.id);
+      await _firestoreFileService.deleteFile(lesson.id);
       await _loadParentFiles();
       _showSuccessSnackBar('File deleted successfully!');
     } catch (e) {
@@ -537,27 +554,30 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: availableChildren.length,
-                          itemBuilder: (context, index) {
-                            final child = availableChildren[index];
-                            final isSelected = selectedChildren.contains(child['uid']);
-                            
-                            return CheckboxListTile(
-                              title: Text(child['name']),
-                              value: isSelected,
-                              onChanged: (bool? value) {
-                                setDialogState(() {
-                                  if (value == true) {
-                                    selectedChildren.add(child['uid']);
-                                  } else {
-                                    selectedChildren.remove(child['uid']);
-                                  }
-                                });
-                              },
-                            );
-                          },
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: availableChildren.length,
+                            itemBuilder: (context, index) {
+                              final child = availableChildren[index];
+                              final isSelected = selectedChildren.contains(child['uid']);
+                              
+                              return CheckboxListTile(
+                                title: Text(child['name']),
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setDialogState(() {
+                                    if (value == true) {
+                                      selectedChildren.add(child['uid']);
+                                    } else {
+                                      selectedChildren.remove(child['uid']);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -582,7 +602,6 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                               ? null
                               : () async {
                                   await _uploadLesson();
-                                  setDialogState(() {});
                                 },
                           child: isUploading
                               ? const SizedBox(
@@ -661,25 +680,6 @@ class _AllLessonsScreenState extends State<AllLessonsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Center(child: CustomText.subtitle("My Files")),
-                      if (!isServerConnected)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Offline Mode',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 10),

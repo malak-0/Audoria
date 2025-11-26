@@ -53,6 +53,14 @@ class GeminiService {
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
     );
 
+    final prompt =
+        '''Please provide a clear and concise summary of the following text. 
+Focus on the main points, key concepts, and important information. 
+Make it easy to understand and well-structured.
+
+Text to summarize:
+$text''';
+
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -60,7 +68,7 @@ class GeminiService {
         'contents': [
           {
             'parts': [
-              {'text': 'Summarize this text: $text'},
+              {'text': prompt},
             ],
           },
         ],
