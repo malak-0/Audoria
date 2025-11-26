@@ -27,25 +27,27 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     super.initState();
     _initializeVoiceSystem();
   }
-    Future<void> _initializeVoiceSystem() async {
-      tts = SpeechFeedback();
-      commandHandler = CommandHandler(tts: tts);
-      voiceService.autoRestart = false;
 
-      voiceService.onResult = (recognizedText) {
-        commandHandler.handleCommand(context, 'saved_files', recognizedText);
-      };
+  Future<void> _initializeVoiceSystem() async {
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    voiceService.autoRestart = false;
 
-      voiceService.autoRestart = true;
+    voiceService.onResult = (recognizedText) {
+      commandHandler.handleCommand(context, 'saved_files', recognizedText);
+    };
 
-      await voiceService.init();
-    }
+    voiceService.autoRestart = true;
+
+    await voiceService.init();
+  }
 
   @override
   void dispose() {
     voiceService.uninitialize();
     super.dispose();
   }
+
   final FirestoreFileService _firestoreFileService = FirestoreFileService();
 
   Future<List<LessonFile>> _loadFilesForChild() async {
@@ -169,45 +171,44 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     // Implement file download logic
     // You can use the fileUrl from PocketBase
   }
-    // File content is stored as base64 in fileContent field
-  }
+  // File content is stored as base64 in fileContent field
+}
 
-  // Keep your existing _getFileTypeColor and _getFileTypeIcon methods
-  Color _getFileTypeColor(String type) {
-    switch (type.toUpperCase()) {
-      case 'PDF':
-        return Colors.red;
-      case 'DOC':
-        return Colors.blue;
-      case 'PPT':
-        return Colors.orange;
-      case 'MP4':
-        return Colors.purple;
-      case 'MP3':
-        return Colors.green;
-      case 'IMAGE':
-        return Colors.pink;
-      default:
-        return Colors.grey;
-    }
+// Keep your existing _getFileTypeColor and _getFileTypeIcon methods
+Color _getFileTypeColor(String type) {
+  switch (type.toUpperCase()) {
+    case 'PDF':
+      return Colors.red;
+    case 'DOC':
+      return Colors.blue;
+    case 'PPT':
+      return Colors.orange;
+    case 'MP4':
+      return Colors.purple;
+    case 'MP3':
+      return Colors.green;
+    case 'IMAGE':
+      return Colors.pink;
+    default:
+      return Colors.grey;
   }
+}
 
-  IconData _getFileTypeIcon(String type) {
-    switch (type.toUpperCase()) {
-      case 'PDF':
-        return Icons.picture_as_pdf;
-      case 'DOC':
-        return Icons.description;
-      case 'PPT':
-        return Icons.slideshow;
-      case 'MP4':
-        return Icons.videocam;
-      case 'MP3':
-        return Icons.audiotrack;
-      case 'IMAGE':
-        return Icons.image;
-      default:
-        return Icons.insert_drive_file;
-    }
+IconData _getFileTypeIcon(String type) {
+  switch (type.toUpperCase()) {
+    case 'PDF':
+      return Icons.picture_as_pdf;
+    case 'DOC':
+      return Icons.description;
+    case 'PPT':
+      return Icons.slideshow;
+    case 'MP4':
+      return Icons.videocam;
+    case 'MP3':
+      return Icons.audiotrack;
+    case 'IMAGE':
+      return Icons.image;
+    default:
+      return Icons.insert_drive_file;
   }
 }

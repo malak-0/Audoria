@@ -46,7 +46,6 @@ dependencies:
   mobile_scanner: ^7.1.2
   path_provider: ^2.1.5
   pdfx: ^2.9.2
-  pocketbase: ^0.20.0
   qr_flutter: ^4.1.0
   speech_to_text: ^7.3.0
 
