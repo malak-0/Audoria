@@ -8,13 +8,13 @@ class SpeechFeedback {
   }
 
   Future<void> _initTts() async {
-    await _tts.awaitSpeakCompletion(true); 
+    await _tts.awaitSpeakCompletion(true);
     await _tts.setLanguage("en-US");
     await _tts.setSpeechRate(0.45);
   }
 
   Future<void> speak(String text) async {
-    await _tts.stop(); 
+    await _tts.stop();
     await _tts.speak(text);
   }
 

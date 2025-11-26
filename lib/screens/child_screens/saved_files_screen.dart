@@ -2,6 +2,9 @@ import 'package:audoria/models/lesson_file_model.dart';
 import 'package:audoria/utils/backend_services/firestore_file_service.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/navigation_services/navigation_helper.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/listen.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_appbar.dart';
@@ -15,6 +18,36 @@ class SavedFilesScreen extends StatefulWidget {
 }
 
 class _SavedFilesScreenState extends State<SavedFilesScreen> {
+  late SpeechFeedback tts;
+  late CommandHandler commandHandler;
+  final voiceService = VoiceService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVoiceSystem();
+  }
+
+  Future<void> _initializeVoiceSystem() async {
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    voiceService.autoRestart = false;
+
+    voiceService.onResult = (recognizedText) {
+      commandHandler.handleCommand(context, 'saved_files', recognizedText);
+    };
+
+    voiceService.autoRestart = true;
+
+    await voiceService.init();
+  }
+
+  @override
+  void dispose() {
+    voiceService.uninitialize();
+    super.dispose();
+  }
+
   final FirestoreFileService _firestoreFileService = FirestoreFileService();
 
   Future<List<LessonFile>> _loadFilesForChild() async {
@@ -379,23 +412,23 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
         return Colors.grey;
     }
   }
+}
 
-  IconData _getFileTypeIcon(String type) {
-    switch (type.toUpperCase()) {
-      case 'PDF':
-        return Icons.picture_as_pdf;
-      case 'DOC':
-        return Icons.description;
-      case 'PPT':
-        return Icons.slideshow;
-      case 'MP4':
-        return Icons.videocam;
-      case 'MP3':
-        return Icons.audiotrack;
-      case 'IMAGE':
-        return Icons.image;
-      default:
-        return Icons.insert_drive_file;
-    }
+IconData _getFileTypeIcon(String type) {
+  switch (type.toUpperCase()) {
+    case 'PDF':
+      return Icons.picture_as_pdf;
+    case 'DOC':
+      return Icons.description;
+    case 'PPT':
+      return Icons.slideshow;
+    case 'MP4':
+      return Icons.videocam;
+    case 'MP3':
+      return Icons.audiotrack;
+    case 'IMAGE':
+      return Icons.image;
+    default:
+      return Icons.insert_drive_file;
   }
 }

@@ -38,6 +38,7 @@ dependencies:
   firebase_core: ^4.1.1
   flutter:
     sdk: flutter
+  flutter_dotenv: ^6.0.0
   flutter_tts: ^4.2.3
   google_mlkit_text_recognition: ^0.15.0
   http: ^1.5.0
@@ -72,12 +73,7 @@ flutter:
   assets:
     - assets/images/
     - assets/animations/
-    - assets/images/lesson.png
-    - assets/images/camera.png
-    - assets/images/question.png
-    - assets/images/file.png
-    - assets/images/logo.jpg
-    - assets/images/app_icon.png
+    - .env
   #   - images/a_dot_ham.jpeg
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

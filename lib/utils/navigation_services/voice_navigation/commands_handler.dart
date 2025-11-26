@@ -15,7 +15,7 @@ class CommandHandler {
 
   CommandHandler({required this.tts});
 
-  void handleCommand(
+  Future<void> handleCommand(
     BuildContext context,
     String currentScreen,
     String command, {
@@ -27,6 +27,7 @@ class CommandHandler {
 
     for (var voiceCommand in commandsData[currentScreen]!) {
       if (command.contains(voiceCommand.command)) {
+        navigateTo(context, voiceCommand.navigateTo, arguments: arguments);
         await tts.speak(voiceCommand.message);
 
         if (voiceCommand.command == 'summarize') {
@@ -35,7 +36,6 @@ class CommandHandler {
             navigateTo(context, 'summarization', arguments: summary);
           }
         }
-
         break;
       }
     }
