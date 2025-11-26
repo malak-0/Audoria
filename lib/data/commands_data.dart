@@ -15,21 +15,25 @@ final commandsData = {
     CommandsModel(
       command: 'questions',
       navigateTo: 'questions',
-      message: 'Hi! I’m Audoria, your AI assistant. What do you want to ask about?',
+      message:
+          'Hi! I’m Audoria, your AI assistant. What do you want to ask about?',
     ),
   ],
   'saved_files': [
     CommandsModel(
-      command: 'summarize', 
-      navigateTo: 'summarization', 
-      message: 'processing text'),
+      command: 'summarize',
+      navigateTo: 'summarization',
+      message: 'processing text',
+    ),
     CommandsModel(
-      command: 'quiz', 
-      navigateTo: 'quizes', 
-      message: 'generating questions'),
+      command: 'quiz',
+      navigateTo: 'quizzes',
+      message: 'generating questions',
+    ),
     CommandsModel(
-      command: 'read', 
-      navigateTo: 'summarization', 
-      message: 'extracting text'),
+      command: 'read',
+      navigateTo: 'summarization',
+      message: 'extracting text',
+    ),
   ],
 };

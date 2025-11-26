@@ -115,7 +115,7 @@ class CommandHandler {
   //     await tts.speak("Generating quiz questions, please wait...");
   //     final quizQuestions = await geminiService.generateQuiz(extractedText);
 
-  //     navigateTo(context, 'quizes', arguments: quizQuestions);
+  //     navigateTo(context, 'quizzes', arguments: quizQuestions);
   //   } catch (e) {
   //     await tts.speak("Sorry, I couldn't generate a quiz.");
   //     debugPrint("Error in quiz generation: $e");

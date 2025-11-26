@@ -5,7 +5,6 @@ import 'package:audoria/widgets/lottie_card.dart';
 import 'package:audoria/data/parent_home_list.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:audoria/widgets/custom_text.dart';
 
 class ParentHomeScreen extends StatelessWidget {
   final String username;
@@ -21,52 +20,136 @@ class ParentHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: CustomAppbar(),
+      appBar: const CustomAppbar(showBackButton: false),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 50, left: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const Icon(Icons.person_pin, size: 50),
-                  const SizedBox(width: 8),
-                  FutureBuilder(
-                    future: getCurrentUsername(),
-                    builder: (context, snapshot) {
-                      return CustomText.username(snapshot.data ?? '');
-                    },
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section with enhanced design
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: textColor.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 50),
-              CustomText.subtitle("Track $childName’s progress"),
-
-              Expanded(
-                child: Center(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: parentHomeOptionsList.length,
-                    itemBuilder: (context, index) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          LottieCard(
-                            parentHomeOptions: parentHomeOptionsList[index],
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [bgColor, bgColor.withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          if (index != parentHomeOptionsList.length - 1)
-                            const SizedBox(height: 50),
-                        ],
-                      );
-                    },
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: textColor.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome back,',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: textColor.withOpacity(0.6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            FutureBuilder(
+                              future: getCurrentUsername(),
+                              builder: (context, snapshot) {
+                                final username = snapshot.data ?? 'Parent';
+                                return Text(
+                                  username,
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    color: textColor,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 30),
+                // Subtitle with icon
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.trending_up,
+                        color: textColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Track your child\'s progress',
+                      style: TextStyle(
+                        fontSize: 22,
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                // Options List
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: parentHomeOptionsList.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: LottieCard(
+                        parentHomeOptions: parentHomeOptionsList[index],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

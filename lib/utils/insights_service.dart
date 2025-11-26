@@ -13,6 +13,8 @@ class InsightsService {
     required int totalQuestions,
     required int correctAnswers,
     required int wrongAnswers,
+    String? fileId,
+    String? fileName,
   }) async {
     try {
       final insights = InsightsModel(
@@ -23,6 +25,8 @@ class InsightsService {
         wrongAnswers: wrongAnswers,
         completedAt: DateTime.now(),
         createdAt: DateTime.now(),
+        fileId: fileId,
+        fileName: fileName,
       );
 
       await _firestore.collection('insights').add(insights.toFirestore());
@@ -35,15 +39,31 @@ class InsightsService {
   // Get all insights for a specific child
   Future<List<InsightsModel>> getChildInsights(String childId) async {
     try {
-      final querySnapshot = await _firestore
-          .collection('insights')
-          .where('childId', isEqualTo: childId)
-          .orderBy('completedAt', descending: true)
-          .get();
+      QuerySnapshot querySnapshot;
 
-      return querySnapshot.docs
+      // Try with orderBy first, fallback to without if index doesn't exist
+      try {
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('childId', isEqualTo: childId)
+            .orderBy('completedAt', descending: true)
+            .get();
+      } catch (e) {
+        // If orderBy fails (no index), get without ordering
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('childId', isEqualTo: childId)
+            .get();
+      }
+
+      final insights = querySnapshot.docs
           .map((doc) => InsightsModel.fromFirestore(doc))
           .toList();
+
+      // Sort manually if orderBy wasn't used
+      insights.sort((a, b) => b.completedAt.compareTo(a.completedAt));
+
+      return insights;
     } catch (e) {
       print('Error fetching child insights: $e');
       rethrow;
@@ -53,15 +73,31 @@ class InsightsService {
   // Get all insights for a parent's children
   Future<List<InsightsModel>> getParentChildrenInsights(String parentId) async {
     try {
-      final querySnapshot = await _firestore
-          .collection('insights')
-          .where('parentId', isEqualTo: parentId)
-          .orderBy('completedAt', descending: true)
-          .get();
+      QuerySnapshot querySnapshot;
 
-      return querySnapshot.docs
+      // Try with orderBy first, fallback to without if index doesn't exist
+      try {
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('parentId', isEqualTo: parentId)
+            .orderBy('completedAt', descending: true)
+            .get();
+      } catch (e) {
+        // If orderBy fails (no index), get without ordering
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('parentId', isEqualTo: parentId)
+            .get();
+      }
+
+      final insights = querySnapshot.docs
           .map((doc) => InsightsModel.fromFirestore(doc))
           .toList();
+
+      // Sort manually if orderBy wasn't used
+      insights.sort((a, b) => b.completedAt.compareTo(a.completedAt));
+
+      return insights;
     } catch (e) {
       print('Error fetching parent children insights: $e');
       rethrow;
@@ -74,16 +110,33 @@ class InsightsService {
     String childId,
   ) async {
     try {
-      final querySnapshot = await _firestore
-          .collection('insights')
-          .where('parentId', isEqualTo: parentId)
-          .where('childId', isEqualTo: childId)
-          .orderBy('completedAt', descending: true)
-          .get();
+      QuerySnapshot querySnapshot;
 
-      return querySnapshot.docs
+      // Try with orderBy first, fallback to without if index doesn't exist
+      try {
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('parentId', isEqualTo: parentId)
+            .where('childId', isEqualTo: childId)
+            .orderBy('completedAt', descending: true)
+            .get();
+      } catch (e) {
+        // If orderBy fails (no index), get without ordering
+        querySnapshot = await _firestore
+            .collection('insights')
+            .where('parentId', isEqualTo: parentId)
+            .where('childId', isEqualTo: childId)
+            .get();
+      }
+
+      final insights = querySnapshot.docs
           .map((doc) => InsightsModel.fromFirestore(doc))
           .toList();
+
+      // Sort manually if orderBy wasn't used
+      insights.sort((a, b) => b.completedAt.compareTo(a.completedAt));
+
+      return insights;
     } catch (e) {
       print('Error fetching insights for child: $e');
       rethrow;

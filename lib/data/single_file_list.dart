@@ -12,7 +12,7 @@ final List<FileOptionsModel> fileOptionsList = [
     routeName: 'summarization',
   ),
   FileOptionsModel(
-    title: 'Quizes',
+    title: 'Quizzes',
     iconPath: 'assets/animations/quizes.json',
     routeName: 'quizzes',
   ),
