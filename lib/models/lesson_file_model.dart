@@ -74,21 +74,21 @@ class LessonFile {
     if (filename.isEmpty) return 'Untitled File';
 
     String nameWithoutExt = filename.split('.').first;
-
+    
     nameWithoutExt = nameWithoutExt.replaceAll('_', ' ').replaceAll('-', ' ');
-
+    
     List<String> words = nameWithoutExt.split(' ');
     words = words.map((word) {
       if (word.isEmpty) return word;
       return word[0].toUpperCase() + word.substring(1).toLowerCase();
     }).toList();
-
+    
     return words.join(' ');
   }
 
   static String _getFileTypeFromFilename(String filename) {
     if (filename.isEmpty) return 'OTHER';
-
+    
     final ext = filename.split('.').last.toLowerCase();
     if (ext == 'pdf') return 'PDF';
     if (['doc', 'docx'].contains(ext)) return 'DOC';
