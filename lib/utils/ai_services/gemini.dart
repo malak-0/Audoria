@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
-
 class GeminiService {
   late final String apiKey;
   final String model = 'gemini-2.5-flash';
@@ -16,7 +15,8 @@ class GeminiService {
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
     );
 
-    final enhancedPrompt = '''
+    final enhancedPrompt =
+        '''
       Give a very brief answer to this question. Keep it under 50 words. 
       No markdown, no lists, just plain conversational text.
 
@@ -34,10 +34,7 @@ class GeminiService {
             ],
           },
         ],
-        'generationConfig': {
-          'maxOutputTokens': 100, 
-          'temperature': 0.7,
-        },
+        'generationConfig': {'maxOutputTokens': 100, 'temperature': 0.7},
       }),
     );
 
@@ -48,6 +45,7 @@ class GeminiService {
       throw Exception('Failed to generate response: ${response.body}');
     }
   }
+
   Future<String> summarizeText(String text) async {
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',

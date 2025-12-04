@@ -18,15 +18,8 @@ class TextExtractionService {
       final extractedText = result.text;
       await recognizer.close();
       
-      print('Image text extraction: ${extractedText.length} characters extracted');
-      if (extractedText.isEmpty) {
-        print('WARNING: Text extraction returned empty string');
-      }
-      
       return extractedText;
-    } catch (e, stackTrace) {
-      print('ERROR in extractTextFromImage: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -58,11 +51,8 @@ class TextExtractionService {
       final tempDir = await getTemporaryDirectory();
       final textBuffer = StringBuffer();
 
-      print('PDF has ${doc.pagesCount} pages');
-
       for (int i = 1; i <= doc.pagesCount; i++) {
         try {
-          print('Processing page $i of ${doc.pagesCount}...');
           final page = await doc.getPage(i);
           final image = await page.render(
             width: page.width,
@@ -71,7 +61,6 @@ class TextExtractionService {
           );
           
           if (image == null) {
-            print('WARNING: Page $i rendered as null');
             await page.close();
             continue;
           }
@@ -81,7 +70,6 @@ class TextExtractionService {
           await file.writeAsBytes(imageBytes);
 
           final text = await extractTextFromImage(file);
-          print('Page $i extracted ${text.length} characters');
           textBuffer.writeln('--- Page $i ---\n$text\n');
           await page.close();
           
@@ -90,18 +78,14 @@ class TextExtractionService {
             await file.delete();
           }
         } catch (e) {
-          print('Error processing page $i: $e');
           // Continue with next page
         }
       }
 
       await doc.close();
       final result = textBuffer.toString();
-      print('Total extracted text length: ${result.length}');
       return result;
-    } catch (e, stackTrace) {
-      print('ERROR in extractTextFromPDFBytes: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }

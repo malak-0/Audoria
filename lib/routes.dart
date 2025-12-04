@@ -32,8 +32,8 @@ final Map<String, WidgetBuilder> appRoutes = {
   'child_home': (context) => ChildHomeScreen(),
   'add_child': (context) => AddChildScreen(),
   'all_lessons': (context) => AllLessonsScreen(),
-  'camera_capture': (context) => CameraCaptureScreen(),
-  'captured_image': (context) => CapturedImageScreen(),
+  'camera_capture': (context) => const CameraCaptureScreen(),
+  'captured_image': (context) => const CapturedImageScreen(),
   'insights': (context) => InsightsScreen(),
   'single_file_screen': (context) {
     final arguments =

@@ -13,7 +13,6 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
   CameraController? _controller;
   bool _isCameraInitialized = false;
   bool _isProcessing = false;
-  int _countdown = 0;
 
   @override
   void initState() {
@@ -58,39 +57,29 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
 
     setState(() {
       _isProcessing = true;
-      _countdown = 5;
     });
 
     try {
       final picture = await _controller!.takePicture();
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image captured: ${picture.path}')),
-      );
-
-      // Countdown for 10 seconds
-      for (int i = 5; i > 0; i--) {
-        if (!mounted) return;
-        setState(() {
-          _countdown = i;
-        });
-        await Future.delayed(const Duration(seconds: 1));
-      }
-
-      // Navigate to captured image screen
+      // Navigate to captured image screen with image path
       if (mounted) {
-        Navigator.pushNamed(context, 'captured_image');
+        Navigator.pushReplacementNamed(
+          context,
+          'captured_image',
+          arguments: {'imagePath': picture.path},
+        );
       }
     } catch (e) {
       debugPrint("Capture failed: $e");
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Capture failed: $e')));
-      setState(() {
-        _isProcessing = false;
-        _countdown = 0;
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Capture failed: $e')),
+        );
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 
@@ -189,32 +178,12 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
                     ),
                     const SizedBox(height: 32),
                     const Text(
-                      'Processing Image...',
+                      'Capturing Image...',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: bgColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: bgColor, width: 2),
-                      ),
-                      child: Text(
-                        'Navigating in $_countdown seconds',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
                       ),
                     ),
                   ],
@@ -290,4 +259,3 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
     );
   }
 }
-

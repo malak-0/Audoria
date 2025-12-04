@@ -58,11 +58,11 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
       appBar: const CustomAppbar(showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
+        child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
                 // Welcome Section with enhanced design
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -78,8 +78,8 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                     ],
                   ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                       Container(
                         width: 70,
                         height: 70,
@@ -160,9 +160,9 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
                       ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
                 const SizedBox(height: 25),
                 // Cards Grid with improved layout
                 GridView.count(
@@ -172,26 +172,26 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                   mainAxisSpacing: 18,
                   crossAxisSpacing: 18,
                   childAspectRatio: 0.85,
-                  children: [
-                    CustomCard(
-                      imagePath: 'assets/images/lesson.png',
-                      label: 'LESSON',
-                      routeName: "saved_files",
-                    ),
-                    const CustomCard(
-                      imagePath: 'assets/images/camera.png',
-                      label: 'CAMERA',
-                      routeName: "camera_capture",
-                    ),
-                    const CustomCard(
-                      imagePath: 'assets/images/question.png',
-                      label: 'ASK\nQUESTION',
-                      routeName: "questions",
-                    ),
-                  ],
-                ),
+                children: [
+                  CustomCard(
+                    imagePath: 'assets/images/lesson.png',
+                    label: 'LESSON',
+                    routeName: "saved_files",
+                  ),
+                  const CustomCard(
+                    imagePath: 'assets/images/camera.png',
+                    label: 'CAMERA',
+                    routeName: "camera_capture",
+                  ),
+                  const CustomCard(
+                    imagePath: 'assets/images/question.png',
+                    label: 'ASK\nQUESTION',
+                    routeName: "questions",
+                  ),
+                ],
+              ),
                 const SizedBox(height: 30),
-              ],
+            ],
             ),
           ),
         ),
