@@ -69,15 +69,15 @@ final Map<String, WidgetBuilder> appRoutes = {
   },
   'questions': (context) => QuestionsScreen(),
   'quizzes': (context) {
-    final arguments = ModalRoute.of(context)?.settings.arguments;
+      final arguments = ModalRoute.of(context)?.settings.arguments;
 
-    if (arguments is Map<String, dynamic>) {
-      if (arguments['fileData'] != null) {
-        final fileData = arguments['fileData'] as Map<String, dynamic>;
-        final selectedFile = LessonFile.fromMap(fileData);
-        return QuizzesScreen(selectedFile: selectedFile);
+      if (arguments is Map<String, dynamic>) {
+        if (arguments['fileData'] != null) {
+          final fileData = arguments['fileData'] as Map<String, dynamic>;
+          final selectedFile = LessonFile.fromMap(fileData);
+          return QuizzesScreen(selectedFile: selectedFile);
+        }
       }
-    }
 
     return const QuizzesScreen();
   },

@@ -32,8 +32,8 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
   List<QuizQuestion> questions = [];
   int currentQuestionIndex = 0;
   Timer? loadingTimer;
-  Map<int, int> answers = {}; // questionIndex -> selectedAnswerIndex
-
+  Map<int, int> answers = {}; 
+  
   @override
   void initState() {
     super.initState();
