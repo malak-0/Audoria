@@ -13,10 +13,20 @@ final commandsData = {
       message: 'You are now in the lessons section. chose a file to study',
     ),
     CommandsModel(
+      command: 'lesson',
+      navigateTo: 'saved_files',
+      message: 'You are now in the lessons section. chose a file to study',
+    ),
+    CommandsModel(
+      command: 'lessons',
+      navigateTo: 'saved_files',
+      message: 'You are now in the lessons section. chose a file to study',
+    ),
+    CommandsModel(
       command: 'questions',
       navigateTo: 'questions',
       message:
-          'Hi! I’m Audoria, your AI assistant. What do you want to ask about?',
+          "Hi! I'm Audoria, your AI assistant. What do you want to ask about?",
     ),
   ],
   'single_file_screen': [

@@ -44,8 +44,12 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
   }
 
   Future<void> _initializeVoiceSystem() async {
+    // Wait a bit to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
+    commandHandler.setVoiceService(voiceService);
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
@@ -146,8 +150,14 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
 
   @override
   void dispose() {
+    print("=== SUMMARIZATION SCREEN DISPOSE ===");
     _stopLoadingMessages();
+    // Stop TTS first
+    tts.stop();
+    // Uninitialize voice service
     voiceService.uninitialize();
+    // Dispose command handler
+    commandHandler.dispose();
     super.dispose();
   }
 

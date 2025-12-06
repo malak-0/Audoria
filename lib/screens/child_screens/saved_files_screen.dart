@@ -29,8 +29,12 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
   }
 
   Future<void> _initializeVoiceSystem() async {
+    // Wait a bit to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
+    commandHandler.setVoiceService(voiceService);
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
@@ -42,11 +46,15 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     await voiceService.init();
   }
 
-  // In your SingleFileScreen:
   @override
   void dispose() {
+    print("=== SAVED FILES SCREEN DISPOSE ===");
+    // Stop TTS first
+    tts.stop();
+    // Uninitialize voice service
     voiceService.uninitialize();
-    commandHandler.dispose(); // Add this
+    // Dispose command handler
+    commandHandler.dispose();
     super.dispose();
   }
 

@@ -40,6 +40,9 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
     
     print("Initializing voice system for SingleFileScreen");
     
+    // Wait a bit to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 300));
+    
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
     
@@ -103,7 +106,11 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
 
   void _cleanupVoiceSystem() {
     print("Cleaning up SingleFileScreen voice system");
+    // Stop TTS first
+    tts.stop();
+    // Uninitialize voice service
     voiceService.uninitialize();
+    // Dispose command handler
     commandHandler.dispose();
     _isInitialized = false;
   }

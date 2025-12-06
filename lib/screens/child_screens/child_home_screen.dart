@@ -27,8 +27,12 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
   }
 
   Future<void> _initializeVoiceSystem() async {
+    // Wait a bit to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 300));
+
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
+    commandHandler.setVoiceService(voiceService);
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
@@ -37,7 +41,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
 
     final username = await getChildUsername();
     await tts.speak(
-      "Welcome $username. You are on the home screen. Say camera, saved files, or questions.",
+      "Welcome $username. You are on the home screen. Say camera, lesson, or questions.",
     );
 
     voiceService.autoRestart = true;
@@ -45,11 +49,15 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     await voiceService.init();
   }
 
-  // In your SingleFileScreen:
   @override
   void dispose() {
+    print("=== CHILD HOME SCREEN DISPOSE ===");
+    // Stop TTS first
+    tts.stop();
+    // Uninitialize voice service
     voiceService.uninitialize();
-    commandHandler.dispose(); // Add this
+    // Dispose command handler
+    commandHandler.dispose();
     super.dispose();
   }
 
@@ -60,11 +68,11 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
       appBar: const CustomAppbar(showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
-        child: Padding(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 // Welcome Section with enhanced design
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -80,8 +88,8 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                     ],
                   ),
                   child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
                       Container(
                         width: 70,
                         height: 70,
@@ -162,9 +170,9 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.3,
                       ),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 25),
                 // Cards Grid with improved layout
                 GridView.count(
@@ -174,26 +182,26 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                   mainAxisSpacing: 18,
                   crossAxisSpacing: 18,
                   childAspectRatio: 0.85,
-                children: [
-                  CustomCard(
-                    imagePath: 'assets/images/lesson.png',
-                    label: 'LESSON',
-                    routeName: "saved_files",
-                  ),
-                  const CustomCard(
-                    imagePath: 'assets/images/camera.png',
-                    label: 'CAMERA',
-                    routeName: "camera_capture",
-                  ),
-                  const CustomCard(
-                    imagePath: 'assets/images/question.png',
-                    label: 'ASK\nQUESTION',
-                    routeName: "questions",
-                  ),
-                ],
-              ),
+                  children: [
+                    CustomCard(
+                      imagePath: 'assets/images/lesson.png',
+                      label: 'LESSON',
+                      routeName: "saved_files",
+                    ),
+                    const CustomCard(
+                      imagePath: 'assets/images/camera.png',
+                      label: 'CAMERA',
+                      routeName: "camera_capture",
+                    ),
+                    const CustomCard(
+                      imagePath: 'assets/images/question.png',
+                      label: 'ASK\nQUESTION',
+                      routeName: "questions",
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 30),
-            ],
+              ],
             ),
           ),
         ),

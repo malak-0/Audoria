@@ -26,23 +26,32 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
   String processingStatus = 'Extracting text from image...';
   LessonFile? _processedFile;
   String? errorMessage;
-  late SpeechFeedback tts;
+  SpeechFeedback? tts;
   String? _imagePath;
   bool _isMounted = true;
 
   @override
   void initState() {
     super.initState();
-    tts = SpeechFeedback();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _processImage();
+    // Wait a bit to ensure previous screen's cleanup is complete
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        tts = SpeechFeedback();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _processImage();
+          }
+        });
+      }
     });
   }
 
   @override
   void dispose() {
+    print("=== CAPTURED IMAGE SCREEN DISPOSE ===");
     _isMounted = false;
-    tts.stop();
+    // Stop TTS if initialized
+    tts?.stop();
     super.dispose();
   }
 
@@ -178,7 +187,7 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
         });
       }
 
-      await tts.speak(
+      await tts?.speak(
         "Image processed successfully! I found text in the image. Would you like me to read it, summarize it, or create a quiz?",
       );
     } catch (e) {
@@ -189,7 +198,7 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
         });
       }
 
-      await tts.speak(
+      await tts?.speak(
         "Sorry, I couldn't process the image. ${e.toString()}",
       );
     }
@@ -197,14 +206,14 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
 
   Future<void> _readText() async {
     if (_processedFile?.content == null || _processedFile!.content!.isEmpty) {
-      await tts.speak("Sorry, no text found in the image.");
+      await tts?.speak("Sorry, no text found in the image.");
       return;
     }
 
-    await tts.stop();
-    await tts.speak("Reading the text now.");
+    await tts?.stop();
+    await tts?.speak("Reading the text now.");
     await Future.delayed(const Duration(milliseconds: 800));
-    await tts.speak(_processedFile!.content!);
+    await tts?.speak(_processedFile!.content!);
   }
 
   // -------- SHOW LOADING SCREEN --------
