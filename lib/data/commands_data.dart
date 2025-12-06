@@ -1,7 +1,7 @@
 import 'package:audoria/models/commands_model.dart';
 
 final commandsData = {
-  'home_page': [
+  'child_home': [
     CommandsModel(
       command: 'camera',
       navigateTo: 'camera_capture',
@@ -19,7 +19,38 @@ final commandsData = {
           'Hi! I’m Audoria, your AI assistant. What do you want to ask about?',
     ),
   ],
-  'saved_files': [
+  'single_file_screen': [
+     CommandsModel(
+      command: 'summarize',
+      navigateTo: 'summarization',
+      message: 'Processing text',
+    ),
+    CommandsModel(
+      command: 'summarise',
+      navigateTo: 'summarization',
+      message: 'Processing text',
+    ),
+    CommandsModel(
+      command: 'summary',
+      navigateTo: 'summarization',
+      message: 'Processing text',
+    ),
+    CommandsModel(
+      command: 'summar',
+      navigateTo: 'summarization', message: 'Processing text', 
+    ),
+    CommandsModel(
+      command: 'quiz',
+      navigateTo: 'quizzes',
+      message: 'generating questions',
+    ),
+    CommandsModel(
+      command: 'read',
+      navigateTo: 'summarization',
+      message: 'extracting text',
+    ),
+  ],
+    'captured_image': [
     CommandsModel(
       command: 'summarize',
       navigateTo: 'summarization',

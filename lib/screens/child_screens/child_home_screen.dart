@@ -32,7 +32,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
-      commandHandler.handleCommand(context, 'home_page', recognizedText);
+      commandHandler.handleCommand(context, 'child_home', recognizedText);
     };
 
     final username = await getChildUsername();
@@ -45,9 +45,11 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     await voiceService.init();
   }
 
+  // In your SingleFileScreen:
   @override
   void dispose() {
     voiceService.uninitialize();
+    commandHandler.dispose(); // Add this
     super.dispose();
   }
 
@@ -114,7 +116,7 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Welcome back,',
+                                  'Welcome,',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: textColor.withOpacity(0.6),

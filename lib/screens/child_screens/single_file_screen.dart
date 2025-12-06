@@ -22,34 +22,56 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
   final voiceService = VoiceService();
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeVoiceSystem();
+    print("=== SINGLE FILE SCREEN INIT ===");
+    
+    // Delay initialization to ensure previous screen is cleaned up
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _initializeVoiceSystem();
+    });
   }
 
   Future<void> _initializeVoiceSystem() async {
+    if (_isInitialized) return;
+    
+    print("Initializing voice system for SingleFileScreen");
+    
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
+    
+    // Hard reset the voice service first
+    await voiceService.hardReset();
+    
+    // Connect voice service to command handler
+    commandHandler.setVoiceService(voiceService);
+    
     voiceService.autoRestart = false;
-
     voiceService.onResult = (recognizedText) {
+      print("=== VOICE ON SINGLE FILE: $recognizedText ===");
       commandHandler.handleCommand(
         context,
-        'saved_files',
+        'single_file_screen',
         recognizedText,
-        arguments: widget.selectedFile.fileUrl!,
+        arguments: widget.selectedFile.toFullMap(),
       );
     };
 
-    await tts.speak(
-      "now , would u like me to summarize the file, extract the main topics or generate a quiz to test yourself, i can also read the whole file to help u understand what its talking about.",
-    );
-
+    // Start voice service
     voiceService.autoRestart = true;
-
     await voiceService.init();
+    
+    _isInitialized = true;
+    
+    // Speak a short instruction
+    await Future.delayed(const Duration(milliseconds: 500));
+    await voiceService.pauseDuringTTS();
+    await tts.speak("File screen. Say summarize, quiz, or read.");
+    await Future.delayed(const Duration(seconds: 1));
+    await voiceService.resumeAfterTTS();
   }
 
   Future<void> _readFile() async {
@@ -57,24 +79,39 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
       final content = widget.selectedFile.content;
 
       if (content == null || content.isEmpty || content.trim().isEmpty) {
+        await voiceService.pauseDuringTTS();
         await tts.speak(
-          "Sorry, this file doesn't have readable text content. The file may not have been processed yet.",
+          "Sorry, this file doesn't have readable text content.",
         );
+        await Future.delayed(const Duration(seconds: 1));
+        await voiceService.resumeAfterTTS();
         return;
       }
 
+      await voiceService.pauseDuringTTS();
       await tts.stop();
       await tts.speak("Reading the file now.");
       await Future.delayed(const Duration(milliseconds: 800));
       await tts.speak(content);
+      await Future.delayed(const Duration(seconds: 1));
+      await voiceService.resumeAfterTTS();
+
     } catch (e) {
       await tts.speak("Sorry, I couldn't read the file. Please try again.");
     }
   }
 
+  void _cleanupVoiceSystem() {
+    print("Cleaning up SingleFileScreen voice system");
+    voiceService.uninitialize();
+    commandHandler.dispose();
+    _isInitialized = false;
+  }
+
   @override
   void dispose() {
-    voiceService.uninitialize();
+    print("=== SINGLE FILE SCREEN DISPOSE ===");
+    _cleanupVoiceSystem();
     super.dispose();
   }
 
@@ -82,173 +119,98 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: SafeArea(
+      body: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 30),
         child: Column(
           children: [
             // Back Button
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: textColor.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(Icons.arrow_back, color: textColor, size: 20),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Enhanced Page Header
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: textColor.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
+              child: Container(
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        _cleanupVoiceSystem();
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: bgColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _getFileTypeIcon(widget.selectedFile.fileType),
-                          color: bgColor,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.selectedFile.title,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                                letterSpacing: 0.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getFileTypeColor(
-                                      widget.selectedFile.fileType,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    widget.selectedFile.fileType,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: _getFileTypeColor(
-                                        widget.selectedFile.fileType,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(
-                                  Icons.description,
-                                  size: 14,
-                                  color: textColor.withOpacity(0.5),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.selectedFile.formattedFileSize,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: textColor.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: textColor.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
+                        child: Icon(Icons.arrow_back, color: textColor, size: 20),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+            ),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    SizedBox(width: 20,),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: bgColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _getFileTypeIcon(widget.selectedFile.fileType),
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.selectedFile.title,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                              letterSpacing: 0.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 30),
-            // Options Section Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.menu, color: textColor, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'What would you like to do?',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Options List
+            
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0), // Added horizontal padding
                 child: ListView.builder(
                   itemCount: fileOptionsList.length,
                   itemBuilder: (context, index) {
                     final fileOption = fileOptionsList[index];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 15),
                       child: LottieCard(
                         fileOptions: fileOption,
                         onTap: () async {
+                          await voiceService.pauseDuringTTS();
+                          
                           if (fileOption.title.toLowerCase() == 'read file') {
                             await _readFile();
                           } else if (fileOption.routeName != null) {
@@ -267,6 +229,9 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                               );
                             }
                           }
+                          
+                          await Future.delayed(const Duration(milliseconds: 500));
+                          await voiceService.resumeAfterTTS();
                         },
                       ),
                     );
@@ -274,30 +239,10 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
-  }
-
-  Color _getFileTypeColor(String type) {
-    switch (type.toUpperCase()) {
-      case 'PDF':
-        return Colors.red;
-      case 'DOC':
-        return Colors.blue;
-      case 'PPT':
-        return Colors.orange;
-      case 'MP4':
-        return Colors.purple;
-      case 'MP3':
-        return Colors.green;
-      case 'IMAGE':
-        return Colors.pink;
-      default:
-        return Colors.grey;
-    }
   }
 
   IconData _getFileTypeIcon(String type) {

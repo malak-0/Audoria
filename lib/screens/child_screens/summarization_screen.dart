@@ -10,8 +10,17 @@ import 'dart:async';
 
 class SummarizationScreen extends StatefulWidget {
   final LessonFile? selectedFile;
-  final String? summary; // For backward compatibility
-  const SummarizationScreen({super.key, this.selectedFile, this.summary});
+  final String? summary;
+  final bool isLoading;
+  final String? error;
+
+  const SummarizationScreen({
+    super.key,
+    this.selectedFile,
+    this.summary,
+    this.isLoading = false,
+    this.error,
+  });
 
   @override
   State<SummarizationScreen> createState() => _SummarizationScreenState();

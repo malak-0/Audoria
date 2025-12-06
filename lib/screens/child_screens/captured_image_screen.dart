@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:audoria/widgets/page_header.dart';
 import 'package:audoria/models/lesson_file_model.dart';
 import 'package:audoria/utils/ai_services/text_extraction.dart';
 import 'package:audoria/utils/constants.dart';
@@ -11,7 +12,10 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 class CapturedImageScreen extends StatefulWidget {
-  const CapturedImageScreen({super.key});
+  final String? imagePath;
+  final Map<String, dynamic>? processedFile;
+
+  const CapturedImageScreen({super.key, this.imagePath, this.processedFile});
 
   @override
   State<CapturedImageScreen> createState() => _CapturedImageScreenState();
@@ -20,10 +24,11 @@ class CapturedImageScreen extends StatefulWidget {
 class _CapturedImageScreenState extends State<CapturedImageScreen> {
   bool isProcessing = true;
   String processingStatus = 'Extracting text from image...';
-  LessonFile? processedFile;
+  LessonFile? _processedFile;
   String? errorMessage;
   late SpeechFeedback tts;
-  String? imagePath;
+  String? _imagePath;
+  bool _isMounted = true;
 
   @override
   void initState() {
@@ -36,31 +41,54 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
 
   @override
   void dispose() {
+    _isMounted = false;
     tts.stop();
     super.dispose();
   }
 
   Future<void> _processImage() async {
     try {
-      // Get image path from arguments
-      final arguments =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      // Use provided imagePath or get from arguments
+      if (widget.imagePath != null) {
+        _imagePath = widget.imagePath;
+      } else {
+        // Get image path from arguments
+        final arguments =
+            ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-      if (arguments == null || arguments['imagePath'] == null) {
+        if (arguments != null && arguments['imagePath'] != null) {
+          _imagePath = arguments['imagePath'] as String;
+        }
+      }
+
+      // If we already have processed file from constructor, skip processing
+      if (widget.processedFile != null && _imagePath != null) {
+        if (_isMounted) {
+          setState(() {
+            _processedFile = LessonFile.fromMap(widget.processedFile!);
+            isProcessing = false;
+          });
+        }
+        return;
+      }
+
+      // Process image if needed
+      if (_imagePath == null) {
         throw Exception('No image path provided');
       }
 
-      imagePath = arguments['imagePath'] as String;
-      final imageFile = File(imagePath!);
+      final imageFile = File(_imagePath!);
 
       if (!await imageFile.exists()) {
         throw Exception('Image file not found');
       }
 
       // Step 1: Extract text from image
-      setState(() {
-        processingStatus = 'Extracting text from image...';
-      });
+      if (_isMounted) {
+        setState(() {
+          processingStatus = 'Extracting text from image...';
+        });
+      }
 
       final extractedText = await TextExtractionService.extractTextFromImage(
         imageFile,
@@ -71,9 +99,11 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
       }
 
       // Step 2: Save to Firebase
-      setState(() {
-        processingStatus = 'Saving to database...';
-      });
+      if (_isMounted) {
+        setState(() {
+          processingStatus = 'Saving to database...';
+        });
+      }
 
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -127,7 +157,7 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
           await FirebaseFirestore.instance.collection('files').add(fileData);
 
       // Create LessonFile object
-      processedFile = LessonFile(
+      final lessonFile = LessonFile(
         id: docRef.id,
         title: fileData['title'] as String,
         filename: fileName,
@@ -141,18 +171,23 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
       );
 
       // Processing complete
-      setState(() {
-        isProcessing = false;
-      });
+      if (_isMounted) {
+        setState(() {
+          _processedFile = lessonFile;
+          isProcessing = false;
+        });
+      }
 
       await tts.speak(
         "Image processed successfully! I found text in the image. Would you like me to read it, summarize it, or create a quiz?",
       );
     } catch (e) {
-      setState(() {
-        isProcessing = false;
-        errorMessage = e.toString();
-      });
+      if (_isMounted) {
+        setState(() {
+          isProcessing = false;
+          errorMessage = e.toString();
+        });
+      }
 
       await tts.speak(
         "Sorry, I couldn't process the image. ${e.toString()}",
@@ -161,7 +196,7 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
   }
 
   Future<void> _readText() async {
-    if (processedFile?.content == null || processedFile!.content!.isEmpty) {
+    if (_processedFile?.content == null || _processedFile!.content!.isEmpty) {
       await tts.speak("Sorry, no text found in the image.");
       return;
     }
@@ -169,352 +204,242 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
     await tts.stop();
     await tts.speak("Reading the text now.");
     await Future.delayed(const Duration(milliseconds: 800));
-    await tts.speak(processedFile!.content!);
+    await tts.speak(_processedFile!.content!);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (isProcessing) {
-      return Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Show captured image if available
-                if (imagePath != null)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 40),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.file(
-                        File(imagePath!),
-                        height: 300,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 50),
-                // Animated Lottie loading
-                Lottie.asset(
-                  'assets/animations/files.json',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 30),
+  // -------- SHOW LOADING SCREEN --------
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Show captured image if available
+              if (_imagePath != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 40),
                   decoration: BoxDecoration(
-                    color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: textColor.withOpacity(0.1),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      Text(
-                        processingStatus,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      const LinearProgressIndicator(),
-                    ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(
+                      File(_imagePath!),
+                      height: 300,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+              const SizedBox(height: 50),
+              // Animated Lottie loading
+              Lottie.asset(
+                'assets/animations/files.json',
+                width: 150,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 30),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: textColor.withOpacity(0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      processingStatus,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Please wait...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textColor.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // -------- SHOW ERROR SCREEN --------
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: Colors.red.withOpacity(0.7),
+                ),
+                const SizedBox(height: 30),
                 Text(
-                  'Please wait...',
+                  'Processing Failed',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text(
+                  errorMessage!,
                   style: TextStyle(
                     fontSize: 16,
-                    color: textColor.withOpacity(0.6),
+                    color: textColor.withOpacity(0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: textColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  label: const Text(
+                    'Go Back',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    if (errorMessage != null) {
-      return Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: Center(
+  // -------- SHOW MAIN UI --------
+  Widget _buildMainScreen() {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: Column(
+        children: [
+          // Header Section
+          PageHeader(
+            title: _processedFile?.title ?? 'Captured Image',
+            subTitle: 'Text Extracted Successfully!',
+            imagePath: _imagePath,
+          ),
+
+          // -------- GRID VIEW SECTION --------
+          Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(40.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                childAspectRatio: 1.0,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 80,
-                    color: Colors.red.withOpacity(0.7),
+                  _buildGridCard(
+                    title: 'Read text',
+                    animation: 'assets/animations/readText.json',
+                    onTap: _readText,
                   ),
-                  const SizedBox(height: 30),
-                  Text(
-                    'Processing Failed',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
+                  _buildGridCard(
+                    title: 'Summary',
+                    animation: 'assets/animations/summary.json',
+                    onTap: () {
+                      if (_processedFile != null) {
+                        final fileMap = _processedFile!.toFullMap();
+                        NavigationHelper.goTo(
+                          context,
+                          'summarization',
+                          arguments: {'fileData': fileMap},
+                        );
+                      }
+                    },
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    errorMessage!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: textColor.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: textColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    label: const Text(
-                      'Go Back',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                  _buildGridCard(
+                    title: 'Quiz',
+                    animation: 'assets/animations/quiz.json',
+                    onTap: () {
+                      if (_processedFile != null) {
+                        final fileMap = _processedFile!.toFullMap();
+                        NavigationHelper.goTo(
+                          context,
+                          'quizzes',
+                          arguments: {'fileData': fileMap},
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
             ),
           ),
-        ),
-      );
-    }
-
-    // Processing complete - show options
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Back Button
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: textColor),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 20,
-                  ),
-                  child: Column(
-                    children: [
-                      // Image Preview
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            if (imagePath != null)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(15),
-                                child: Image.file(
-                                  File(imagePath!),
-                                  height: 200,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 28,
-                                ),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Text(
-                                    'Text Extracted Successfully!',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              processedFile?.title ?? 'Captured Image',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: textColor.withOpacity(0.7),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // "What would you like to do?" Section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: textColor.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.touch_app,
-                              color: bgColor,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                'What would you like to do?',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: textColor,
-                                  letterSpacing: 0.3,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      // Options Cards
-                      _buildOptionCard(
-                        title: 'Read text',
-                        animation: 'assets/animations/readFile.json',
-                        onTap: _readText,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildOptionCard(
-                        title: 'Summarization',
-                        animation: 'assets/animations/summarization.json',
-                        onTap: () {
-                          final fileMap = processedFile!.toFullMap();
-                          NavigationHelper.goTo(
-                            context,
-                            'summarization',
-                            arguments: {'fileData': fileMap},
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _buildOptionCard(
-                        title: 'Quizzes',
-                        animation: 'assets/animations/quiz.json',
-                        onTap: () {
-                          final fileMap = processedFile!.toFullMap();
-                          NavigationHelper.goTo(
-                            context,
-                            'quizzes',
-                            arguments: {'fileData': fileMap},
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildOptionCard({
+  @override
+  Widget build(BuildContext context) {
+    if (isProcessing) {
+      return _buildLoadingScreen();
+    }
+
+    if (errorMessage != null) {
+      return _buildErrorScreen();
+    }
+
+    return _buildMainScreen();
+  }
+
+  // -------- CARD BUILDER --------
+  Widget _buildGridCard({
     required String title,
     required String animation,
     required VoidCallback onTap,
@@ -522,11 +447,9 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 190,
-        width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
           color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.08),
@@ -536,28 +459,27 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(21.0),
-          child: Row(
+          padding: const EdgeInsets.all(15.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: Center(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF030303),
-                    ),
-                  ),
-                ),
+              // Lottie Animation
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: Lottie.asset(animation, fit: BoxFit.contain),
               ),
-              const SizedBox(width: 16),
-              Lottie.asset(
-                animation,
-                width: 120,
-                height: 120,
-                fit: BoxFit.fitWidth,
+
+              const SizedBox(height: 12),
+
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

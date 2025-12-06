@@ -42,9 +42,11 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     await voiceService.init();
   }
 
+  // In your SingleFileScreen:
   @override
   void dispose() {
     voiceService.uninitialize();
+    commandHandler.dispose(); // Add this
     super.dispose();
   }
 

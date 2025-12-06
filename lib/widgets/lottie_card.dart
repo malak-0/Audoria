@@ -29,26 +29,32 @@ class LottieCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height ?? 190,
-        width: width ?? 190,
+        height: height ?? 150, // Reduced from 190
+        width: width ?? 150, // Reduced from 190
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(25), // Slightly smaller radius
           color: Colors.white,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(15.0),
+          padding: const EdgeInsets.all(8.0), // Reduced padding
           child: Center(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Lottie.asset(
                   iconPath,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.fitHeight,
+                  width: 70, // Reduced from 100
+                  height: 70, // Reduced from 100
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 10),
-                CustomText.username(title),
+                const SizedBox(height: 5),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0), // Added horizontal padding
+                  child: CustomText.username(
+                    title,
+                  ),
+                ),
               ],
             ),
           ),
@@ -67,42 +73,47 @@ class LottieCard extends StatelessWidget {
                 ? () => Navigator.pushNamed(context, fileOptions!.routeName!)
                 : null),
         child: Container(
-          height: 190,
-          width: double.infinity,
+          height: 160, // Reduced from 190
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(20), // Reduced radius
             color: Colors.white,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(21.0),
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8.0), // Adjusted padding
             child: Row(
               children: fileOptions!.isReversed
                   ? [
                       Lottie.asset(
                         fileOptions!.iconPath,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.fitWidth,
+                        width: 100, // Reduced from 120
+                        height: 100, // Reduced from 120
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 5), // Reduced spacing
                       Expanded(
-                        child: Center(
-                          child: CustomText.username(fileOptions!.title),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0), // Added horizontal padding
+                          child: CustomText.username(
+                            fileOptions!.title,
+                          ),
                         ),
                       ),
                     ]
                   : [
                       Expanded(
-                        child: Center(
-                          child: CustomText.username(fileOptions!.title),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0), // Added horizontal padding
+                          child: CustomText.username(
+                            fileOptions!.title,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 8), // Reduced spacing
                       Lottie.asset(
                         fileOptions!.iconPath,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.fitWidth,
+                        width: 100, // Reduced from 120
+                        height: 100, // Reduced from 120
+                        fit: BoxFit.contain,
                       ),
                     ],
             ),

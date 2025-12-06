@@ -1,7 +1,6 @@
 import 'dart:io';
-import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/utils/constants.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 class PageHeader extends StatelessWidget {
   final String title;
@@ -19,39 +18,90 @@ class PageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: imagePath != null ? 260 : 165,
+      constraints: BoxConstraints(minHeight: 330),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(15),
-          bottomRight: Radius.circular(15),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
-        color: textColor.withValues(alpha: 0.1),
+        color: textColor.withOpacity(0.1),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 8.0, top: 25),
+        padding: const EdgeInsets.only(left: 25.0, top: 40, right: 25.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/images/back.png', width: 20, height: 20),
-            Padding(
-              padding: EdgeInsets.only(left: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // 🔙 Back Button
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Icon(Icons.arrow_back, color: textColor, size: 24),
+              ),
+            
+
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 10),
+
+            // Subtitle
+            if (subTitle != null)
+              Row(
                 children: [
-                  SizedBox(height: 5),
-                  CustomText.username(title),
-                  if (subTitle != null) CustomText.subtitle(subTitle!),
-                  if (imagePath != null)
-                    Center(
-                      child: Image.file(
-                        File(imagePath!),
-                        width: 120,
-                        height: 150,
+                  Flexible(
+                    child: Text(
+                      subTitle!,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
                       ),
                     ),
+                  ),
                 ],
               ),
-            ),
+
+            const SizedBox(height: 20),
+
+            // Image preview
+            if (imagePath != null)
+              Center(
+                child: Container(
+                  width: 250,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(
+                      File(imagePath!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 15),
           ],
         ),
       ),
