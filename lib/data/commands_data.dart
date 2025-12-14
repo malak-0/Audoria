@@ -10,27 +10,24 @@ final commandsData = {
     CommandsModel(
       command: 'saved files',
       navigateTo: 'saved_files',
-      message: 'You are now in the lessons section. chose a file to study',
+      message: '',
     ),
-    CommandsModel(
-      command: 'lesson',
-      navigateTo: 'saved_files',
-      message: 'You are now in the lessons section. chose a file to study',
-    ),
-    CommandsModel(
-      command: 'lessons',
-      navigateTo: 'saved_files',
-      message: 'You are now in the lessons section. chose a file to study',
-    ),
+    CommandsModel(command: 'lesson', navigateTo: 'saved_files', message: ''),
+    CommandsModel(command: 'lessons', navigateTo: 'saved_files', message: ''),
     CommandsModel(
       command: 'questions',
       navigateTo: 'questions',
       message:
           "Hi! I'm Audoria, your AI assistant. What do you want to ask about?",
     ),
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
+    ),
   ],
   'single_file_screen': [
-     CommandsModel(
+    CommandsModel(
       command: 'summarize',
       navigateTo: 'summarization',
       message: 'Processing text',
@@ -47,7 +44,8 @@ final commandsData = {
     ),
     CommandsModel(
       command: 'summar',
-      navigateTo: 'summarization', message: 'Processing text', 
+      navigateTo: 'summarization',
+      message: 'Processing text',
     ),
     CommandsModel(
       command: 'quiz',
@@ -59,8 +57,13 @@ final commandsData = {
       navigateTo: 'summarization',
       message: 'extracting text',
     ),
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
+    ),
   ],
-    'captured_image': [
+  'captured_image': [
     CommandsModel(
       command: 'summarize',
       navigateTo: 'summarization',
@@ -75,6 +78,37 @@ final commandsData = {
       command: 'read',
       navigateTo: 'summarization',
       message: 'extracting text',
+    ),
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
+    ),
+  ],
+  'saved_files': [
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
+    ),
+  ],
+  'summarization': [
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
+    ),
+  ],
+  'camera_capture': [
+    CommandsModel(
+      command: 'capture',
+      navigateTo: 'capture',
+      message: 'Capturing image',
+    ),
+    CommandsModel(
+      command: 'go back',
+      navigateTo: 'back',
+      message: 'Going back',
     ),
   ],
 };

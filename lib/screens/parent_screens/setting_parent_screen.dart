@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audoria/screens/register_screen.dart';
 import 'package:audoria/widgets/custom_text.dart';
 import 'package:audoria/widgets/custom_bottom_navbar.dart';
+import 'package:audoria/utils/backend_services/firebase_helpers.dart';
 
 class SettingParent extends StatefulWidget {
   final List<Map<String, String>> childrenData;
@@ -90,15 +91,7 @@ class _SettingParentState extends State<SettingParent> {
                   vertical: 16,
                 ),
               ),
-              onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegisterScreen(),
-                  ),
-                  (route) => false,
-                );
-              },
+              onPressed: () => logout(context),
               icon: const Icon(Icons.logout),
               label: CustomText.username('Logout'),
             ),

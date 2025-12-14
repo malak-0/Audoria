@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:audoria/utils/backend_services/child_signup_helper.dart';
+import 'package:audoria/utils/backend_services/shared_preferences_helper.dart';
 import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -89,6 +90,9 @@ class _ScanQrCodeScreenState extends State<ScanQrCodeScreen> {
       print('Signing in with custom token...');
       final userCredential = await _auth.signInWithCustomToken(customToken);
       print('Sign in successful: ${userCredential.user?.uid}');
+
+      // Set login status to true
+      await SharedPreferencesHelper.setLoggedIn(true);
 
       setState(() {
         _statusMessage = 'Login successful! Redirecting...';

@@ -1,6 +1,10 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:audoria/utils/constants.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/commands_handler.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/listen.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
+import '../../main.dart';
 
 class CameraCaptureScreen extends StatefulWidget {
   const CameraCaptureScreen({super.key});
@@ -9,10 +13,15 @@ class CameraCaptureScreen extends StatefulWidget {
   State<CameraCaptureScreen> createState() => _CameraCaptureScreenState();
 }
 
-class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
+class _CameraCaptureScreenState extends State<CameraCaptureScreen>
+    with RouteAware {
   CameraController? _controller;
   bool _isCameraInitialized = false;
   bool _isProcessing = false;
+  late SpeechFeedback tts;
+  late CommandHandler commandHandler;
+  final voiceService = VoiceService();
+  bool _isVoiceInitialized = false;
 
   @override
   void initState() {
@@ -40,6 +49,8 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
         setState(() {
           _isCameraInitialized = true;
         });
+        // Initialize voice system after camera is ready
+        _initializeVoiceSystem();
       }
     } catch (e) {
       debugPrint("Camera initialization error: $e");
@@ -47,7 +58,93 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
   }
 
   @override
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    _isVoiceInitialized = false;
+    await _initializeVoiceSystem();
+  }
+
+  Future<void> _initializeVoiceSystem() async {
+    if (_isVoiceInitialized) return;
+
+    // Wait a bit to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+
+    // Hard reset voice service to ensure clean state
+    await voiceService.hardReset();
+
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    commandHandler.setVoiceService(voiceService);
+    voiceService.autoRestart = false;
+
+    voiceService.onResult = (recognizedText) {
+      if (mounted) {
+        _handleVoiceCommand(recognizedText);
+      }
+    };
+
+    voiceService.autoRestart = true;
+    await voiceService.init();
+    _isVoiceInitialized = true;
+
+    // Speak instruction after voice service is ready
+    if (mounted && _isCameraInitialized) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await voiceService.pauseDuringTTS();
+      await tts.speak(
+        "Camera ready. Say capture to take a photo.",
+      ); // Wait for TTS to complete
+      await voiceService.resumeAfterTTS();
+    }
+  }
+
+  Future<void> _handleVoiceCommand(String recognizedText) async {
+    final command = recognizedText.toLowerCase().trim();
+
+    // Check if it's the capture command
+    if (command == 'capture' || command.contains('capture')) {
+      await voiceService.pauseDuringTTS();
+      await tts.stop();
+      await Future.delayed(const Duration(milliseconds: 200));
+      await _captureImage();
+      await Future.delayed(const Duration(seconds: 1));
+      await voiceService.resumeAfterTTS();
+      return;
+    }
+
+    // Otherwise, handle as a regular command
+    commandHandler.handleCommand(context, 'camera_capture', recognizedText);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
+    _isVoiceInitialized = false;
+    try {
+      tts.stop();
+    } catch (e) {}
+    try {
+      voiceService.uninitialize();
+    } catch (e) {}
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
     _controller?.dispose();
     super.dispose();
   }
@@ -73,9 +170,9 @@ class _CameraCaptureScreenState extends State<CameraCaptureScreen> {
     } catch (e) {
       debugPrint("Capture failed: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Capture failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Capture failed: $e')));
         setState(() {
           _isProcessing = false;
         });

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dart:async';
+import '../../main.dart';
 
 class QuizzesScreen extends StatefulWidget {
   final LessonFile? selectedFile;
@@ -21,7 +22,7 @@ class QuizzesScreen extends StatefulWidget {
   State<QuizzesScreen> createState() => _QuizzesScreenState();
 }
 
-class _QuizzesScreenState extends State<QuizzesScreen> {
+class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
   final VoiceService mainVoiceService = VoiceService();
@@ -41,7 +42,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
   int currentQuestionIndex = 0;
   Timer? loadingTimer;
   Map<int, int> answers = {};
-  
+
   List<String> _voiceAnswerLetters = ['a', 'b', 'c', 'd'];
   String _lastRecognizedText = '';
 
@@ -54,33 +55,53 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
     _generateQuiz();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    await _initializeQuizVoiceSystem();
+  }
+
   Future<void> _initializeQuizVoiceSystem() async {
     try {
       print("🎤 QUIZ: Stopping main VoiceService first...");
-      
+
       // Stop the main voice service before starting quiz voice
       await mainVoiceService.stop();
       await mainVoiceService.uninitialize();
       print("✅ QUIZ: Main VoiceService stopped");
-      
+
       // Wait a bit to ensure microphone is released
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       print("🎤 QUIZ: Initializing simple quiz voice system...");
-      
+
       _isSpeechInitialized = await _speech.initialize(
         onStatus: (status) {
           print("🎤 QUIZ: Speech status: $status");
-          
+
           // If we're supposed to be listening but we're not, restart
-          if (_isListeningForAnswer && !_isListening && status == 'notListening') {
+          if (_isListeningForAnswer &&
+              !_isListening &&
+              status == 'notListening') {
             print("🎤 QUIZ: Detected notListening status, restarting...");
             _startQuizListening();
           }
         },
         onError: (error) {
           print("🎤 QUIZ: Speech error: $error");
-          
+
           // Reset on error
           _isListening = false;
           if (_isListeningForAnswer) {
@@ -89,7 +110,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
           }
         },
       );
-      
+
       if (_isSpeechInitialized) {
         print("✅ QUIZ: Simple quiz voice system initialized successfully!");
       } else {
@@ -101,22 +122,34 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
   }
 
   Future<void> _startQuizListening() async {
+    print("🎤 QUIZ: _startQuizListening called");
+    print("  - _isSpeechInitialized: $_isSpeechInitialized");
+    print("  - _isListening: $_isListening");
+    print("  - _isListeningForAnswer: $_isListeningForAnswer");
+
     if (!_isSpeechInitialized || _isListening || !_isListeningForAnswer) {
-      print("🎤 QUIZ: Cannot start listening - initialized: $_isSpeechInitialized, listening: $_isListening, for answer: $_isListeningForAnswer");
+      print(
+        "❌ QUIZ: Cannot start listening - initialized: $_isSpeechInitialized, listening: $_isListening, for answer: $_isListeningForAnswer",
+      );
       return;
     }
 
     try {
       print("🎤 QUIZ: Starting quiz listening...");
-      
+
       // Stop any existing listening first
       await _speech.stop();
-      await Future.delayed(const Duration(milliseconds: 200));
-      
+      await Future.delayed(const Duration(milliseconds: 300));
+
       // Start fresh listening session
       _isListening = true;
+      print("🎤 QUIZ: About to call _speech.listen()...");
+
       await _speech.listen(
         onResult: (result) {
+          print(
+            "🎤 QUIZ: onResult triggered with: '${result.recognizedWords}'",
+          );
           if (result.recognizedWords.isNotEmpty) {
             _handleQuizVoiceInput(result.recognizedWords);
           }
@@ -124,15 +157,17 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
         listenFor: const Duration(seconds: 60),
         pauseFor: const Duration(seconds: 3),
         cancelOnError: false,
-        partialResults: false,
+        partialResults: true,
         listenMode: stt.ListenMode.dictation,
       );
-      
-      print("✅ QUIZ: Quiz listening started successfully");
+
+      print(
+        "✅ QUIZ: Quiz listening started successfully, _isListening = $_isListening",
+      );
     } catch (e) {
       print("❌ QUIZ: Error starting quiz listening: $e");
       _isListening = false;
-      
+
       // Try again after delay
       if (_isListeningForAnswer) {
         print("🔄 QUIZ: Retrying to start listening in 1 second...");
@@ -157,56 +192,48 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
 
   void _handleQuizVoiceInput(String recognizedText) {
     print("🎤 QUIZ: === VOICE CAPTURED: '$recognizedText' ===");
-    
+
     recognizedText = recognizedText.toLowerCase().trim();
     _lastRecognizedText = recognizedText;
-    
+
     // Simple, direct matching
-    if (recognizedText == 'a' || 
-        recognizedText == 'one' || 
+    if (recognizedText == 'a' ||
+        recognizedText == 'one' ||
         recognizedText == '1' ||
         recognizedText == 'first') {
       print("✅ QUIZ: Selected option A");
       _selectQuizAnswer(0);
-    } 
-    else if (recognizedText == 'b' || 
-             recognizedText == 'two' || 
-             recognizedText == '2' ||
-             recognizedText == 'second') {
+    } else if (recognizedText == 'b' ||
+        recognizedText == 'two' ||
+        recognizedText == '2' ||
+        recognizedText == 'second') {
       print("✅ QUIZ: Selected option B");
       _selectQuizAnswer(1);
-    }
-    else if (recognizedText == 'c' || 
-             recognizedText == 'three' || 
-             recognizedText == '3' ||
-             recognizedText == 'third') {
+    } else if (recognizedText == 'c' ||
+        recognizedText == 'three' ||
+        recognizedText == '3' ||
+        recognizedText == 'third') {
       print("✅ QUIZ: Selected option C");
       _selectQuizAnswer(2);
-    }
-    else if (recognizedText == 'd' || 
-             recognizedText == 'four' || 
-             recognizedText == '4' ||
-             recognizedText == 'fourth') {
+    } else if (recognizedText == 'd' ||
+        recognizedText == 'four' ||
+        recognizedText == '4' ||
+        recognizedText == 'fourth') {
       print("✅ QUIZ: Selected option D");
       _selectQuizAnswer(3);
-    }
-    else if (recognizedText.contains('a')) {
+    } else if (recognizedText.contains('a')) {
       print("✅ QUIZ: Contains 'a', selecting option A");
       _selectQuizAnswer(0);
-    }
-    else if (recognizedText.contains('b')) {
+    } else if (recognizedText.contains('b')) {
       print("✅ QUIZ: Contains 'b', selecting option B");
       _selectQuizAnswer(1);
-    }
-    else if (recognizedText.contains('c')) {
+    } else if (recognizedText.contains('c')) {
       print("✅ QUIZ: Contains 'c', selecting option C");
       _selectQuizAnswer(2);
-    }
-    else if (recognizedText.contains('d')) {
+    } else if (recognizedText.contains('d')) {
       print("✅ QUIZ: Contains 'd', selecting option D");
       _selectQuizAnswer(3);
-    }
-    else {
+    } else {
       print("❌ QUIZ: Unrecognized input: '$recognizedText'");
       print("🎤 QUIZ: Expected: a, b, c, d, 1, 2, 3, 4, one, two, three, four");
     }
@@ -214,47 +241,64 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
 
   void _selectQuizAnswer(int answerIndex) {
     if (currentQuestionIndex < questions.length) {
-      print("🎯 QUIZ: Processing answer $answerIndex for question $currentQuestionIndex");
+      print(
+        "🎯 QUIZ: Processing answer $answerIndex for question $currentQuestionIndex",
+      );
       _onAnswerSelected(currentQuestionIndex, answerIndex);
     }
   }
 
   Future<void> _readCurrentQuestion() async {
     if (currentQuestionIndex >= questions.length) return;
-    
+
     setState(() {
       _isReadingQuestion = true;
       _isListeningForAnswer = false;
     });
-    
+
     // Stop listening while reading
     await _stopQuizListening();
-    
+
     final question = questions[currentQuestionIndex];
-    
+
     // Read question with pauses
     await tts.speak("Question ${currentQuestionIndex + 1}.");
     await Future.delayed(const Duration(milliseconds: 800));
     await tts.speak(question.question);
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     // Read options
     for (int i = 0; i < question.options.length; i++) {
-      await tts.speak("Option ${_voiceAnswerLetters[i].toUpperCase()}: ${question.options[i]}");
+      await tts.speak(
+        "Option ${_voiceAnswerLetters[i].toUpperCase()}: ${question.options[i]}",
+      );
       await Future.delayed(const Duration(milliseconds: 500));
     }
-    
-    // Simple instruction
-    await tts.speak("Say A, B, C, or D for your answer.");
+
+    // Dynamic instruction based on number of options
+    final optionCount = question.options.length;
+    String instruction;
+    if (optionCount == 2) {
+      instruction = "Say A or B for your answer.";
+    } else if (optionCount == 3) {
+      instruction = "Say A, B, or C for your answer.";
+    } else {
+      instruction = "Say A, B, C, or D for your answer.";
+    }
+    await tts.speak(instruction);
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // Start listening for answer
     setState(() {
       _isReadingQuestion = false;
       _isListeningForAnswer = true;
     });
-    
-    _startQuizListening();
+
+    print("🎤 QUIZ: Starting to listen for answer now...");
+    await _startQuizListening();
+    print(
+      "🎤 QUIZ: Listening for answer should be active now. isListening: $_isListening",
+    );
   }
 
   Future<void> _generateQuiz() async {
@@ -275,7 +319,10 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
         setState(() {
           isLoading = false;
         });
-        await tts.speak('Sorry, this file does not have readable text content.');
+        await _stopQuizListening(); // Stop listening during TTS
+        await tts.speak(
+          'Sorry, this file does not have readable text content.',
+        );
         return;
       }
 
@@ -299,6 +346,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
       if (generatedQuestions.isNotEmpty) {
         await _readCurrentQuestion();
       } else {
+        await _stopQuizListening(); // Stop listening during TTS
         await tts.speak('No questions were generated.');
       }
     } catch (e) {
@@ -306,6 +354,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
       setState(() {
         isLoading = false;
       });
+      await _stopQuizListening(); // Stop listening during TTS
       await tts.speak('Sorry, I could not generate a quiz.');
     }
   }
@@ -313,7 +362,9 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
   void _startLoadingMessages() {
     loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (isLoading && mounted) {
+        await _stopQuizListening(); // Stop listening during TTS
         await tts.speak("Generating quiz");
+        // Don't restart listening here - it will restart when quiz is ready
       } else {
         timer.cancel();
       }
@@ -331,37 +382,39 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
     setState(() {
       _isListeningForAnswer = false;
     });
-    
+
     // Store the answer
     answers[questionIndex] = selectedAnswerIndex;
-    
-    // Give feedback
+
+    // Give feedback (listening already stopped above)
     final question = questions[questionIndex];
     final isCorrect = selectedAnswerIndex == question.correctAnswerIndex;
-    
+
     if (isCorrect) {
       await tts.speak("Correct!");
     } else {
-      await tts.speak("Incorrect. The answer is ${_voiceAnswerLetters[question.correctAnswerIndex].toUpperCase()}.");
+      await tts.speak(
+        "Incorrect. The answer is ${_voiceAnswerLetters[question.correctAnswerIndex].toUpperCase()}.",
+      );
     }
-    
+
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (currentQuestionIndex < questions.length - 1) {
       // Next question
       setState(() {
         currentQuestionIndex++;
       });
-      
+
       // Animate to next page
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-      
+
       await tts.speak("Next question.");
       await Future.delayed(const Duration(seconds: 1));
-      
+
       await _readCurrentQuestion();
     } else {
       // Quiz completed
@@ -401,7 +454,10 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
     }
 
     // Show completion dialog
-    _showCompletionDialog(correctAnswers: correctAnswers, totalQuestions: questions.length);
+    _showCompletionDialog(
+      correctAnswers: correctAnswers,
+      totalQuestions: questions.length,
+    );
   }
 
   void _showCompletionDialog({
@@ -421,10 +477,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
             const SizedBox(height: 16),
             Text(
               'Score: $correctAnswers/$totalQuestions',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -461,10 +514,13 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _stopLoadingMessages();
     _stopQuizListening();
     _pageController.dispose();
-    commandHandler.dispose();
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
     super.dispose();
   }
 
@@ -502,17 +558,20 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                     ),
                   ),
                   const Spacer(),
-                  
+
                   // Voice status indicator
                   if (!isLoading && questions.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: _isReadingQuestion
                             ? Colors.blue.withOpacity(0.1)
                             : _isListeningForAnswer
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.white,
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -522,36 +581,36 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                             _isReadingQuestion
                                 ? Icons.volume_up
                                 : _isListeningForAnswer
-                                    ? Icons.mic
-                                    : Icons.quiz,
+                                ? Icons.mic
+                                : Icons.quiz,
                             size: 16,
                             color: _isReadingQuestion
                                 ? Colors.blue
                                 : _isListeningForAnswer
-                                    ? Colors.green
-                                    : bgColor,
+                                ? Colors.green
+                                : bgColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             _isReadingQuestion
                                 ? 'Reading'
                                 : _isListeningForAnswer
-                                    ? 'Listening'
-                                    : 'Voice Quiz',
+                                ? 'Listening'
+                                : 'Voice Quiz',
                             style: TextStyle(
                               fontSize: 14,
                               color: _isReadingQuestion
                                   ? Colors.blue
                                   : _isListeningForAnswer
-                                      ? Colors.green
-                                      : textColor,
+                                  ? Colors.green
+                                  : textColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  
+
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -696,7 +755,7 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                             },
                           ),
                         ),
-                        
+
                         // Voice controls (from second code)
                         Container(
                           padding: const EdgeInsets.all(20),
@@ -731,8 +790,12 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
-                                        _isListeningForAnswer ? Icons.mic : Icons.info_outline,
-                                        color: _isListeningForAnswer ? Colors.green : Colors.blue,
+                                        _isListeningForAnswer
+                                            ? Icons.mic
+                                            : Icons.info_outline,
+                                        color: _isListeningForAnswer
+                                            ? Colors.green
+                                            : Colors.blue,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 8),
@@ -743,7 +806,9 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                                               : 'Question will be read aloud automatically',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: _isListeningForAnswer ? Colors.green : Colors.blue,
+                                            color: _isListeningForAnswer
+                                                ? Colors.green
+                                                : Colors.blue,
                                             fontWeight: FontWeight.w500,
                                           ),
                                           textAlign: TextAlign.center,

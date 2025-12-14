@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/custom_bottom_navbar.dart';
 import '../../widgets/custom_appbar.dart';
+import '../../main.dart';
 
 class ChildHomeScreen extends StatefulWidget {
   const ChildHomeScreen({super.key});
@@ -15,10 +16,11 @@ class ChildHomeScreen extends StatefulWidget {
   State<ChildHomeScreen> createState() => _ChildHomeScreenState();
 }
 
-class _ChildHomeScreenState extends State<ChildHomeScreen> {
+class _ChildHomeScreenState extends State<ChildHomeScreen> with RouteAware {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
   final voiceService = VoiceService();
+  bool _isVoiceInitialized = false;
 
   @override
   void initState() {
@@ -26,9 +28,35 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     _initializeVoiceSystem();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    _isVoiceInitialized = false;
+    await _initializeVoiceSystem();
+  }
+
   Future<void> _initializeVoiceSystem() async {
-    // Wait a bit to ensure previous screen's cleanup is complete
-    await Future.delayed(const Duration(milliseconds: 300));
+    if (_isVoiceInitialized) return;
+
+    // Wait a bit longer to ensure previous screen's cleanup is complete
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+
+    // Hard reset voice service to ensure clean state
+    await voiceService.hardReset();
 
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
@@ -36,27 +64,33 @@ class _ChildHomeScreenState extends State<ChildHomeScreen> {
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
-      commandHandler.handleCommand(context, 'child_home', recognizedText);
+      if (mounted) {
+        commandHandler.handleCommand(context, 'child_home', recognizedText);
+      }
     };
-
-    final username = await getChildUsername();
-    await tts.speak(
-      "Welcome $username. You are on the home screen. Say camera, lesson, or questions.",
-    );
 
     voiceService.autoRestart = true;
 
     await voiceService.init();
+    _isVoiceInitialized = true;
+
+    // Speak welcome message after voice service is initialized
+    if (mounted) {
+      final username = await getChildUsername();
+      await voiceService.pauseDuringTTS();
+      await tts.speak(
+        "Welcome $username. You are on the home screen. Say camera, lesson, or questions.",
+      ); // Wait for TTS to complete
+      await voiceService.resumeAfterTTS();
+    }
   }
 
   @override
   void dispose() {
-    print("=== CHILD HOME SCREEN DISPOSE ===");
-    // Stop TTS first
+    routeObserver.unsubscribe(this);
+    _isVoiceInitialized = false;
     tts.stop();
-    // Uninitialize voice service
     voiceService.uninitialize();
-    // Dispose command handler
     commandHandler.dispose();
     super.dispose();
   }

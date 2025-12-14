@@ -7,6 +7,7 @@ import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
+import '../../main.dart';
 
 class SummarizationScreen extends StatefulWidget {
   final LessonFile? selectedFile;
@@ -26,7 +27,8 @@ class SummarizationScreen extends StatefulWidget {
   State<SummarizationScreen> createState() => _SummarizationScreenState();
 }
 
-class _SummarizationScreenState extends State<SummarizationScreen> {
+class _SummarizationScreenState extends State<SummarizationScreen>
+    with RouteAware {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
   final voiceService = VoiceService();
@@ -43,17 +45,43 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
     _generateSummary();
   }
 
+  @override
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    await _initializeVoiceSystem();
+  }
+
   Future<void> _initializeVoiceSystem() async {
     // Wait a bit to ensure previous screen's cleanup is complete
-    await Future.delayed(const Duration(milliseconds: 300));
-    
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Hard reset voice service to ensure clean state
+    await voiceService.hardReset();
+
+    if (!mounted) return;
+
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
     commandHandler.setVoiceService(voiceService);
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
-      commandHandler.handleCommand(context, 'saved_files', recognizedText);
+      if (mounted) {
+        commandHandler.handleCommand(context, 'summarization', recognizedText);
+      }
     };
 
     voiceService.autoRestart = true;
@@ -95,9 +123,12 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
               '• Text extraction failed during upload\n\n'
               'Please try re-uploading the file.';
         });
+        await voiceService.pauseDuringTTS();
         await tts.speak(
           'Sorry, this file does not have readable text content. Please try re-uploading the file.',
         );
+        await Future.delayed(const Duration(seconds: 1));
+        await voiceService.resumeAfterTTS();
         return;
       }
 
@@ -123,14 +154,20 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
         isLoading = false;
         summary = 'Sorry, I could not generate a summary. Please try again.';
       });
+      await voiceService.pauseDuringTTS();
       await tts.speak(summary);
+      await Future.delayed(const Duration(seconds: 1));
+      await voiceService.resumeAfterTTS();
     }
   }
 
   void _startLoadingMessages() {
     loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (isLoading && mounted) {
+        await voiceService.pauseDuringTTS();
         await tts.speak("Loading");
+        await Future.delayed(const Duration(milliseconds: 500));
+        await voiceService.resumeAfterTTS();
       } else {
         timer.cancel();
       }
@@ -144,20 +181,26 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
 
   Future<void> _readSummary() async {
     if (summary.isNotEmpty && mounted) {
-      await tts.speak(summary);
+      await voiceService.pauseDuringTTS();
+      await tts.speak(summary); // This Future completes when TTS finishes
+      await voiceService.resumeAfterTTS();
     }
   }
 
   @override
+  @override
   void dispose() {
-    print("=== SUMMARIZATION SCREEN DISPOSE ===");
+    routeObserver.unsubscribe(this);
     _stopLoadingMessages();
-    // Stop TTS first
-    tts.stop();
-    // Uninitialize voice service
-    voiceService.uninitialize();
-    // Dispose command handler
-    commandHandler.dispose();
+    try {
+      tts.stop();
+    } catch (e) {}
+    try {
+      voiceService.uninitialize();
+    } catch (e) {}
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
     super.dispose();
   }
 
@@ -316,45 +359,45 @@ class _SummarizationScreenState extends State<SummarizationScreen> {
                           ],
                         )
                       : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: bgColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: bgColor.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.description_outlined,
+                                    color: bgColor,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Summary',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: Icon(
-                              Icons.description_outlined,
-                              color: bgColor,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Summary',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: textColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                            const SizedBox(height: 20),
                             Text(
                               summary,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: textColor.withOpacity(0.8),
-                          height: 1.6,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                color: textColor.withOpacity(0.8),
+                                height: 1.6,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
 
                 const SizedBox(height: 40),

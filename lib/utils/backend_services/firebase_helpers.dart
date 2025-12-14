@@ -1,4 +1,5 @@
 import 'package:audoria/utils/ui_helpers.dart';
+import 'package:audoria/utils/backend_services/shared_preferences_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ Future<void> login(BuildContext context, String email, String password) async {
         .get();
 
     if (parentDoc.exists) {
+      await SharedPreferencesHelper.setLoggedIn(true);
       navigatePushReplacement(context, "parent_home");
       showSnackBar(context, "Welcome Parent!");
       return;
@@ -46,6 +48,7 @@ Future<void> login(BuildContext context, String email, String password) async {
     }
 
     if (isChild) {
+      await SharedPreferencesHelper.setLoggedIn(true);
       navigatePushReplacement(context, "child_home");
       showSnackBar(context, "Welcome!");
       return;
@@ -85,6 +88,8 @@ Future<void> register(
         });
 
     await credential.user!.sendEmailVerification();
+    // Set logged in status after successful registration
+    await SharedPreferencesHelper.setLoggedIn(true);
     navigatePushReplacement(context, "add_child");
     message = "Account created.";
   } on FirebaseAuthException catch (e) {
@@ -118,6 +123,7 @@ void resetPassword(BuildContext context, String email) async {
 
 void logout(BuildContext context) async {
   await FirebaseAuth.instance.signOut();
+  await SharedPreferencesHelper.setLoggedIn(false);
   navigatePushReplacement(context, "login");
   showSnackBar(context, "Logged Out");
 }

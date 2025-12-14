@@ -6,10 +6,13 @@ import 'package:audoria/utils/ai_services/text_extraction.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:audoria/utils/navigation_services/navigation_helper.dart';
 import 'package:audoria/utils/navigation_services/voice_navigation/speak.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/listen.dart';
+import 'package:audoria/utils/navigation_services/voice_navigation/commands_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import '../../main.dart';
 
 class CapturedImageScreen extends StatefulWidget {
   final String? imagePath;
@@ -21,38 +24,102 @@ class CapturedImageScreen extends StatefulWidget {
   State<CapturedImageScreen> createState() => _CapturedImageScreenState();
 }
 
-class _CapturedImageScreenState extends State<CapturedImageScreen> {
+class _CapturedImageScreenState extends State<CapturedImageScreen>
+    with RouteAware {
   bool isProcessing = true;
   String processingStatus = 'Extracting text from image...';
   LessonFile? _processedFile;
   String? errorMessage;
-  SpeechFeedback? tts;
+  late SpeechFeedback tts;
+  late CommandHandler commandHandler;
+  final voiceService = VoiceService();
   String? _imagePath;
   bool _isMounted = true;
+  bool _isVoiceInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Wait a bit to ensure previous screen's cleanup is complete
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
-        tts = SpeechFeedback();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _processImage();
-          }
-        });
+        _processImage();
       }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    _isVoiceInitialized = false;
+    if (_processedFile != null) {
+      await _initializeVoiceSystem();
+    }
+  }
+
+  @override
   void dispose() {
-    print("=== CAPTURED IMAGE SCREEN DISPOSE ===");
+    routeObserver.unsubscribe(this);
     _isMounted = false;
-    // Stop TTS if initialized
-    tts?.stop();
+    _isVoiceInitialized = false;
+    try {
+      tts.stop();
+    } catch (e) {}
+    try {
+      voiceService.uninitialize();
+    } catch (e) {}
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
     super.dispose();
+  }
+
+  Future<void> _initializeVoiceSystem() async {
+    if (_isVoiceInitialized || !mounted) return;
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    await voiceService.hardReset();
+
+    tts = SpeechFeedback();
+    commandHandler = CommandHandler(tts: tts);
+    commandHandler.setVoiceService(voiceService);
+    voiceService.autoRestart = false;
+
+    voiceService.onResult = (recognizedText) {
+      if (mounted && _processedFile != null) {
+        commandHandler.handleCommand(
+          context,
+          'captured_image',
+          recognizedText,
+          arguments: _processedFile!.toFullMap(),
+        );
+      }
+    };
+
+    voiceService.autoRestart = true;
+    await voiceService.init();
+    _isVoiceInitialized = true;
+
+    if (mounted) {
+      await voiceService.pauseDuringTTS();
+      await tts.speak(
+        "Captured image screen. Say summarize, quiz, read, or go back.",
+      );
+      await voiceService.resumeAfterTTS();
+    }
   }
 
   Future<void> _processImage() async {
@@ -77,6 +144,9 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
             _processedFile = LessonFile.fromMap(widget.processedFile!);
             isProcessing = false;
           });
+
+          // Initialize voice system
+          await _initializeVoiceSystem();
         }
         return;
       }
@@ -121,7 +191,9 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
 
       // Get parent UID (the child's parent)
       String? parentUid;
-      final allUsers = await FirebaseFirestore.instance.collection('users').get();
+      final allUsers = await FirebaseFirestore.instance
+          .collection('users')
+          .get();
 
       for (final userDoc in allUsers.docs) {
         final childDoc = await FirebaseFirestore.instance
@@ -162,8 +234,9 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
         'fileContent': fileContentBase64,
       };
 
-      final docRef =
-          await FirebaseFirestore.instance.collection('files').add(fileData);
+      final docRef = await FirebaseFirestore.instance
+          .collection('files')
+          .add(fileData);
 
       // Create LessonFile object
       final lessonFile = LessonFile(
@@ -185,11 +258,10 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
           _processedFile = lessonFile;
           isProcessing = false;
         });
-      }
 
-      await tts?.speak(
-        "Image processed successfully! I found text in the image. Would you like me to read it, summarize it, or create a quiz?",
-      );
+        // Initialize voice system after processing
+        await _initializeVoiceSystem();
+      }
     } catch (e) {
       if (_isMounted) {
         setState(() {
@@ -197,23 +269,7 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
           errorMessage = e.toString();
         });
       }
-
-      await tts?.speak(
-        "Sorry, I couldn't process the image. ${e.toString()}",
-      );
     }
-  }
-
-  Future<void> _readText() async {
-    if (_processedFile?.content == null || _processedFile!.content!.isEmpty) {
-      await tts?.speak("Sorry, no text found in the image.");
-      return;
-    }
-
-    await tts?.stop();
-    await tts?.speak("Reading the text now.");
-    await Future.delayed(const Duration(milliseconds: 800));
-    await tts?.speak(_processedFile!.content!);
   }
 
   // -------- SHOW LOADING SCREEN --------
@@ -395,7 +451,18 @@ class _CapturedImageScreenState extends State<CapturedImageScreen> {
                   _buildGridCard(
                     title: 'Read text',
                     animation: 'assets/animations/readText.json',
-                    onTap: _readText,
+                    onTap: () async {
+                      if (_processedFile != null) {
+                        await voiceService.pauseDuringTTS();
+                        await tts.stop();
+                        await commandHandler.handleCommand(
+                          context,
+                          'captured_image',
+                          'read',
+                          arguments: _processedFile!.toFullMap(),
+                        );
+                      }
+                    },
                   ),
                   _buildGridCard(
                     title: 'Summary',

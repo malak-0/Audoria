@@ -16,13 +16,21 @@ class CommandHandler {
   final textExtractor = TextExtractionService();
   final geminiService = GeminiService();
   VoiceService? _voiceService;
-  
+
   Timer? _commandDebounceTimer;
+  bool _isDisposed = false;
 
   CommandHandler({required this.tts});
 
   void setVoiceService(VoiceService voiceService) {
     _voiceService = voiceService;
+  }
+
+  Future<void> _safeResumeAfterTTS() async {
+    if (_isDisposed) {
+      return;
+    }
+    await _voiceService?.resumeAfterTTS();
   }
 
   Future<void> handleCommand(
@@ -32,18 +40,17 @@ class CommandHandler {
     Object? arguments,
   }) async {
     command = command.toLowerCase().trim();
-    print("Processing command: '$command' on screen: $currentScreen");
 
-    // Ignore long sentences (these are TTS, not user commands)
-    if (command.split(' ').length > 6) {
-      print("Ignoring long TTS sentence");
+    if (command.isEmpty) {
       return;
     }
 
-    // Cancel any existing debounce timer
+    if (command.split(' ').length > 6) {
+      return;
+    }
+
     _commandDebounceTimer?.cancel();
 
-    // Use debouncing to wait for complete phrases
     _commandDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
       await _processCommand(context, currentScreen, command, arguments);
     });
@@ -55,28 +62,27 @@ class CommandHandler {
     String command,
     Object? arguments,
   ) async {
-    if (!commandsData.containsKey(currentScreen)) return;
-    
-    print("Processing command: '$command'");
-    
-    // Check for exact or partial matches
+    if (!commandsData.containsKey(currentScreen)) {
+      await _safeResumeAfterTTS();
+      return;
+    }
+
     for (var voiceCommand in commandsData[currentScreen]!) {
       final commandLower = voiceCommand.command.toLowerCase();
-      
-      // Exact match
+
       if (command == commandLower) {
         await _executeCommand(context, voiceCommand, arguments);
         return;
       }
-      
-      // Contains match (for multi-word commands)
-      if (commandLower.split(' ').length > 1 && command.contains(commandLower)) {
+
+      if (commandLower.split(' ').length > 1 &&
+          command.contains(commandLower)) {
         await _executeCommand(context, voiceCommand, arguments);
         return;
       }
-      
-      // Single word match (like "summarize")
-      if (commandLower.split(' ').length == 1 && command.contains(commandLower)) {
+
+      if (commandLower.split(' ').length == 1 &&
+          command.contains(commandLower)) {
         await _executeCommand(context, voiceCommand, arguments);
         return;
       }
@@ -88,51 +94,76 @@ class CommandHandler {
     CommandsModel voiceCommand,
     Object? arguments,
   ) async {
-    print("Executing command: ${voiceCommand.command}");
-    
-    // Pause listening IMMEDIATELY
+    if (_isDisposed) {
+      return;
+    }
+
+    try {
+      if (!context.mounted) {
+        return;
+      }
+    } catch (e) {
+      return;
+    }
+
     await _voiceService?.pauseDuringTTS();
-    
-    // Stop any ongoing TTS
     await tts.stop();
-    
-    // Wait a moment to ensure voice recognition is fully stopped
     await Future.delayed(const Duration(milliseconds: 200));
-    
-    // Handle each command type
-    if (voiceCommand.command == 'summarize' || 
-        voiceCommand.command == 'summarise' || 
-        voiceCommand.command == 'summary' || 
+
+    if (voiceCommand.command == 'go back') {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+        return;
+      } else {
+        await tts.speak("Cannot go back from this screen.");
+        await _safeResumeAfterTTS();
+        return;
+      }
+    } else if (voiceCommand.command == 'capture') {
+      await tts.speak(voiceCommand.message);
+      await _safeResumeAfterTTS();
+      return;
+    } else if (voiceCommand.command == 'summarize' ||
+        voiceCommand.command == 'summarise' ||
+        voiceCommand.command == 'summary' ||
         voiceCommand.command == 'summar') {
       await _handleSummarizationCommand(context, arguments);
-    } else if (voiceCommand.command == 'read' || voiceCommand.command == 'read file') {
+    } else if (voiceCommand.command == 'read' ||
+        voiceCommand.command == 'read file') {
       await _handleReadCommand(context, arguments);
-    } else if (voiceCommand.command == 'quiz' || voiceCommand.command == 'test') {
+    } else if (voiceCommand.command == 'quiz' ||
+        voiceCommand.command == 'test') {
       await _handleQuizCommand(context, arguments);
     } else {
-      // For navigation commands, navigate first
-      _navigateToScreen(context, voiceCommand.navigateTo, arguments: arguments);
-      
-      // Wait for navigation to complete
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Then speak the feedback
-      await tts.speak(voiceCommand.message);
+      try {
+        if (context.mounted) {
+          _navigateToScreen(
+            context,
+            voiceCommand.navigateTo,
+            arguments: arguments,
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (voiceCommand.message.isNotEmpty) {
+            await tts.speak(voiceCommand.message);
+          }
+        }
+      } catch (e) {}
     }
-    
-    // Wait for TTS to complete before resuming listening
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Resume listening
-    await _voiceService?.resumeAfterTTS();
+
+    await _safeResumeAfterTTS();
   }
 
   void dispose() {
+    _isDisposed = true;
     _commandDebounceTimer?.cancel();
     _commandDebounceTimer = null;
   }
 
-  Future<void> _safeNavigate(BuildContext context, String routeName, {Object? arguments}) async {
+  Future<void> _safeNavigate(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) async {
     try {
       if (routeName == 'summarization' || routeName == 'quizzes') {
         Navigator.pushReplacementNamed(
@@ -141,32 +172,34 @@ class CommandHandler {
           arguments: arguments,
         );
       } else {
-        Navigator.pushNamed(
-          context,
-          routeName,
-          arguments: arguments,
-        );
+        Navigator.pushNamed(context, routeName, arguments: arguments);
       }
     } catch (e) {
       print("Navigation error: $e");
     }
   }
 
-  void _navigateToScreen(BuildContext context, String routeName, {Object? arguments}) {
-    print("Navigating to: $routeName with arguments: $arguments");
+  void _navigateToScreen(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     _safeNavigate(context, routeName, arguments: arguments);
   }
 
   Future<void> _handleSummarizationCommand(
-    BuildContext context, 
-    Object? fileData
+    BuildContext context,
+    Object? fileData,
   ) async {
     try {
-      print("Handling summarize command with fileData: $fileData");
-      
       if (fileData is! Map<String, dynamic>) {
         await tts.speak("Invalid file provided.");
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
+        return;
+      }
+
+      if (!context.mounted) {
+        await _safeResumeAfterTTS();
         return;
       }
 
@@ -174,12 +207,9 @@ class CommandHandler {
       Navigator.pushNamed(
         context,
         'summarization',
-        arguments: {
-          'fileData': fileData,
-          'isLoading': true,
-        },
+        arguments: {'fileData': fileData, 'isLoading': true},
       );
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
 
       final file = LessonFile.fromMap(fileData);
@@ -188,18 +218,15 @@ class CommandHandler {
       // Check if content exists and is not empty
       if (file.content != null && file.content!.trim().isNotEmpty) {
         await tts.speak("Summarizing the content...");
-        
+
         // Clean up the content first - remove page markers and empty lines
         String cleanContent = file.content!
             .replaceAll(RegExp(r'--- Page \d+ ---'), '')
             .replaceAll(RegExp(r'\n\s*\n'), '\n')
             .trim();
-        
+
         if (cleanContent.isNotEmpty) {
-          print("Sending content to Gemini for summarization: ${cleanContent.length} characters");
           summary = await geminiService.summarizeText(cleanContent);
-        } else {
-          print("Content is empty after cleaning");
         }
       } else {
         await tts.speak("No content available in this file.");
@@ -211,78 +238,73 @@ class CommandHandler {
             'error': "No content available in the file.",
           },
         );
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
         return;
       }
 
       if (summary != null && summary.isNotEmpty) {
-        print("Summary generated successfully: ${summary.length} characters");
         Navigator.pushReplacementNamed(
           context,
           'summarization',
-          arguments: {
-            'summary': summary,
-            'fileData': fileData,
-          },
+          arguments: {'summary': summary, 'fileData': fileData},
         );
         await Future.delayed(const Duration(milliseconds: 500));
         await tts.speak("Summarization complete.");
       } else {
-        print("Failed to generate summary");
         await tts.speak("Sorry, I couldn't generate a summary.");
         Navigator.pushReplacementNamed(
           context,
           'summarization',
           arguments: {
             'fileData': fileData,
-            'error': "Failed to generate summary. The content might be too short or unclear.",
+            'error':
+                "Failed to generate summary. The content might be too short or unclear.",
           },
         );
       }
-      
-      await _voiceService?.resumeAfterTTS();
 
+      await _safeResumeAfterTTS();
     } catch (e) {
-      print("Error in summarization: $e");
       await tts.speak("Sorry, I couldn't summarize the file.");
       Navigator.pushReplacementNamed(
         context,
         'summarization',
-        arguments: {
-          'fileData': fileData,
-          'error': "Error: ${e.toString()}",
-        },
+        arguments: {'fileData': fileData, 'error': "Error: ${e.toString()}"},
       );
-      await _voiceService?.resumeAfterTTS();
+      await _safeResumeAfterTTS();
     }
   }
 
   Future<void> _handleReadCommand(
-    BuildContext context, 
-    Object? fileData
+    BuildContext context,
+    Object? fileData,
   ) async {
     try {
       if (fileData is! Map<String, dynamic>) {
         await tts.speak("Invalid file provided.");
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
+        return;
+      }
+
+      if (!context.mounted) {
+        await _safeResumeAfterTTS();
         return;
       }
 
       await tts.stop();
-      
+
       final file = LessonFile.fromMap(fileData);
       String? contentToRead;
 
       if (file.content != null && file.content!.trim().isNotEmpty) {
         contentToRead = file.content!;
-      }
-      else if (file.fileUrl != null) {
+      } else if (file.fileUrl != null) {
         await tts.speak("Downloading and extracting text...");
         final response = await http.get(Uri.parse(file.fileUrl!));
 
         if (response.statusCode != 200) {
           await tts.speak("Failed to download file.");
-          await _voiceService?.resumeAfterTTS();
+          await _safeResumeAfterTTS();
           return;
         }
 
@@ -293,16 +315,19 @@ class CommandHandler {
         final path = tempFile.path.toLowerCase();
 
         if (path.endsWith('.pdf')) {
-          contentToRead = await TextExtractionService.extractTextFromPDF(tempFile);
+          contentToRead = await TextExtractionService.extractTextFromPDF(
+            tempFile,
+          );
         } else {
-          contentToRead = await TextExtractionService.extractTextFromImage(tempFile);
+          contentToRead = await TextExtractionService.extractTextFromImage(
+            tempFile,
+          );
         }
 
         await tempFile.delete();
-      }
-      else {
+      } else {
         await tts.speak("No readable content found in this file.");
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
         return;
       }
 
@@ -313,34 +338,34 @@ class CommandHandler {
       } else {
         await tts.speak("This file doesn't have readable text content.");
       }
-      
-      await _voiceService?.resumeAfterTTS();
 
+      await _safeResumeAfterTTS();
     } catch (e) {
       await tts.speak("Sorry, I couldn't read the file.");
-      debugPrint("Error in reading: $e");
-      await _voiceService?.resumeAfterTTS();
+      await _safeResumeAfterTTS();
     }
   }
 
   Future<void> _handleQuizCommand(
-    BuildContext context, 
-    Object? fileData
+    BuildContext context,
+    Object? fileData,
   ) async {
     try {
       if (fileData is! Map<String, dynamic>) {
         await tts.speak("Invalid file provided.");
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
+        return;
+      }
+
+      if (!context.mounted) {
+        await _safeResumeAfterTTS();
         return;
       }
 
       Navigator.pushNamed(
         context,
         'quizzes',
-        arguments: {
-          'fileData': fileData,
-          'isLoading': true,
-        },
+        arguments: {'fileData': fileData, 'isLoading': true},
       );
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -350,14 +375,13 @@ class CommandHandler {
 
       if (file.content != null && file.content!.trim().isNotEmpty) {
         contentForQuiz = file.content!;
-      }
-      else if (file.fileUrl != null) {
+      } else if (file.fileUrl != null) {
         await tts.speak("Downloading and extracting text for quiz...");
         final response = await http.get(Uri.parse(file.fileUrl!));
 
         if (response.statusCode != 200) {
           await tts.speak("Failed to download file.");
-          await _voiceService?.resumeAfterTTS();
+          await _safeResumeAfterTTS();
           return;
         }
 
@@ -368,41 +392,41 @@ class CommandHandler {
         final path = tempFile.path.toLowerCase();
 
         if (path.endsWith('.pdf')) {
-          contentForQuiz = await TextExtractionService.extractTextFromPDF(tempFile);
+          contentForQuiz = await TextExtractionService.extractTextFromPDF(
+            tempFile,
+          );
         } else {
-          contentForQuiz = await TextExtractionService.extractTextFromImage(tempFile);
+          contentForQuiz = await TextExtractionService.extractTextFromImage(
+            tempFile,
+          );
         }
 
         await tempFile.delete();
-      }
-      else {
+      } else {
         await tts.speak("No content available to generate quiz.");
-        await _voiceService?.resumeAfterTTS();
+        await _safeResumeAfterTTS();
         return;
       }
 
       if (contentForQuiz != null && contentForQuiz.trim().isNotEmpty) {
         await tts.speak("Generating quiz questions, please wait...");
-        final quizQuestions = await geminiService.generateQuizFromContent(contentForQuiz);
-        
+        final quizQuestions = await geminiService.generateQuizFromContent(
+          contentForQuiz,
+        );
+
         Navigator.pushReplacementNamed(
           context,
           'quizzes',
-          arguments: {
-            'quizData': quizQuestions,
-            'fileData': fileData,
-          },
+          arguments: {'quizData': quizQuestions, 'fileData': fileData},
         );
       } else {
         await tts.speak("Could not extract content for quiz generation.");
       }
-      
-      await _voiceService?.resumeAfterTTS();
 
+      await _safeResumeAfterTTS();
     } catch (e) {
       await tts.speak("Sorry, I couldn't generate a quiz.");
-      debugPrint("Error in quiz generation: $e");
-      await _voiceService?.resumeAfterTTS();
+      await _safeResumeAfterTTS();
     }
   }
 }

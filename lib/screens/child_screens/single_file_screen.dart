@@ -7,6 +7,7 @@ import 'package:audoria/widgets/lottie_card.dart';
 import 'package:audoria/data/single_file_list.dart';
 import 'package:audoria/utils/constants.dart';
 import 'package:flutter/material.dart';
+import '../../main.dart';
 
 class SingleFileScreen extends StatefulWidget {
   final LessonFile selectedFile;
@@ -17,7 +18,7 @@ class SingleFileScreen extends StatefulWidget {
   State<SingleFileScreen> createState() => _SingleFileScreenState();
 }
 
-class _SingleFileScreenState extends State<SingleFileScreen> {
+class _SingleFileScreenState extends State<SingleFileScreen> with RouteAware {
   NavigationHelper navigationHelper = NavigationHelper();
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
@@ -27,54 +28,64 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
   @override
   void initState() {
     super.initState();
-    print("=== SINGLE FILE SCREEN INIT ===");
-    
-    // Delay initialization to ensure previous screen is cleaned up
     Future.delayed(const Duration(milliseconds: 300), () {
       _initializeVoiceSystem();
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    _isInitialized = false;
+    await _initializeVoiceSystem();
+  }
+
   Future<void> _initializeVoiceSystem() async {
     if (_isInitialized) return;
-    
-    print("Initializing voice system for SingleFileScreen");
-    
-    // Wait a bit to ensure previous screen's cleanup is complete
-    await Future.delayed(const Duration(milliseconds: 300));
-    
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    await voiceService.hardReset();
+
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
-    
-    // Hard reset the voice service first
-    await voiceService.hardReset();
-    
-    // Connect voice service to command handler
     commandHandler.setVoiceService(voiceService);
-    
     voiceService.autoRestart = false;
+
     voiceService.onResult = (recognizedText) {
-      print("=== VOICE ON SINGLE FILE: $recognizedText ===");
-      commandHandler.handleCommand(
-        context,
-        'single_file_screen',
-        recognizedText,
-        arguments: widget.selectedFile.toFullMap(),
-      );
+      if (mounted) {
+        commandHandler.handleCommand(
+          context,
+          'single_file_screen',
+          recognizedText,
+          arguments: widget.selectedFile.toFullMap(),
+        );
+      }
     };
 
-    // Start voice service
     voiceService.autoRestart = true;
+
     await voiceService.init();
-    
     _isInitialized = true;
-    
-    // Speak a short instruction
-    await Future.delayed(const Duration(milliseconds: 500));
-    await voiceService.pauseDuringTTS();
-    await tts.speak("File screen. Say summarize, quiz, or read.");
-    await Future.delayed(const Duration(seconds: 1));
-    await voiceService.resumeAfterTTS();
+
+    if (mounted) {
+      await voiceService.pauseDuringTTS();
+      await tts.speak("File screen. Say summarize, quiz, or read.");
+      await voiceService.resumeAfterTTS();
+    }
   }
 
   Future<void> _readFile() async {
@@ -83,10 +94,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
 
       if (content == null || content.isEmpty || content.trim().isEmpty) {
         await voiceService.pauseDuringTTS();
-        await tts.speak(
-          "Sorry, this file doesn't have readable text content.",
-        );
-        await Future.delayed(const Duration(seconds: 1));
+        await tts.speak("Sorry, this file doesn't have readable text content.");
         await voiceService.resumeAfterTTS();
         return;
       }
@@ -94,30 +102,34 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
       await voiceService.pauseDuringTTS();
       await tts.stop();
       await tts.speak("Reading the file now.");
-      await Future.delayed(const Duration(milliseconds: 800));
-      await tts.speak(content);
-      await Future.delayed(const Duration(seconds: 1));
+      await tts.speak(content); // Wait for TTS to complete
       await voiceService.resumeAfterTTS();
-
     } catch (e) {
+      await voiceService.pauseDuringTTS();
       await tts.speak("Sorry, I couldn't read the file. Please try again.");
+      await voiceService.resumeAfterTTS();
     }
   }
 
   void _cleanupVoiceSystem() {
-    print("Cleaning up SingleFileScreen voice system");
-    // Stop TTS first
-    tts.stop();
-    // Uninitialize voice service
-    voiceService.uninitialize();
-    // Dispose command handler
-    commandHandler.dispose();
     _isInitialized = false;
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
+    try {
+      tts.stop();
+    } catch (e) {}
+    try {
+      voiceService.stop();
+    } catch (e) {}
+    try {
+      voiceService.uninitialize();
+    } catch (e) {}
   }
 
   @override
   void dispose() {
-    print("=== SINGLE FILE SCREEN DISPOSE ===");
+    routeObserver.unsubscribe(this);
     _cleanupVoiceSystem();
     super.dispose();
   }
@@ -154,7 +166,11 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                             ),
                           ],
                         ),
-                        child: Icon(Icons.arrow_back, color: textColor, size: 20),
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: textColor,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -165,7 +181,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
               children: [
                 Row(
                   children: [
-                    SizedBox(width: 20,),
+                    SizedBox(width: 20),
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -203,10 +219,12 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
               ],
             ),
             const SizedBox(height: 30),
-            
+
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0), // Added horizontal padding
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                ), // Added horizontal padding
                 child: ListView.builder(
                   itemCount: fileOptionsList.length,
                   itemBuilder: (context, index) {
@@ -217,7 +235,7 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                         fileOptions: fileOption,
                         onTap: () async {
                           await voiceService.pauseDuringTTS();
-                          
+
                           if (fileOption.title.toLowerCase() == 'read file') {
                             await _readFile();
                           } else if (fileOption.routeName != null) {
@@ -236,8 +254,10 @@ class _SingleFileScreenState extends State<SingleFileScreen> {
                               );
                             }
                           }
-                          
-                          await Future.delayed(const Duration(milliseconds: 500));
+
+                          await Future.delayed(
+                            const Duration(milliseconds: 500),
+                          );
                           await voiceService.resumeAfterTTS();
                         },
                       ),

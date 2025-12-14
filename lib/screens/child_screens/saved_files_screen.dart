@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_appbar.dart';
 import '../../widgets/custom_bottom_navbar.dart';
+import '../../main.dart';
 
 class SavedFilesScreen extends StatefulWidget {
   const SavedFilesScreen({super.key});
@@ -17,44 +18,228 @@ class SavedFilesScreen extends StatefulWidget {
   State<SavedFilesScreen> createState() => _SavedFilesScreenState();
 }
 
-class _SavedFilesScreenState extends State<SavedFilesScreen> {
+class _SavedFilesScreenState extends State<SavedFilesScreen>
+    with WidgetsBindingObserver, RouteAware {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
   final voiceService = VoiceService();
+  List<LessonFile> _files = [];
+  bool _isVoiceInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeVoiceSystem();
+    WidgetsBinding.instance.addObserver(this);
+    _loadAndInitialize();
+  }
+
+  Future<void> _loadAndInitialize() async {
+    // Load files first
+    _files = await _loadFilesForChild();
+    if (mounted) {
+      setState(() {}); // Update UI with loaded files
+    }
+    // Then initialize voice system
+    await _initializeVoiceSystem();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_isVoiceInitialized) {
+      // Re-initialize if needed when app comes back to foreground
+      _initializeVoiceSystem();
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _reinitializeVoiceAfterReturn();
+  }
+
+  Future<void> _reinitializeVoiceAfterReturn() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    _files = await _loadFilesForChild();
+    _isVoiceInitialized = false;
+    await _initializeVoiceSystem();
   }
 
   Future<void> _initializeVoiceSystem() async {
-    // Wait a bit to ensure previous screen's cleanup is complete
-    await Future.delayed(const Duration(milliseconds: 300));
-    
+    if (_isVoiceInitialized) {
+      if (!voiceService.isActive) {
+        _isVoiceInitialized = false;
+      } else {
+        return;
+      }
+    }
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    // Hard reset voice service to ensure clean state
+    await voiceService.hardReset();
+
     tts = SpeechFeedback();
     commandHandler = CommandHandler(tts: tts);
     commandHandler.setVoiceService(voiceService);
     voiceService.autoRestart = false;
 
     voiceService.onResult = (recognizedText) {
-      commandHandler.handleCommand(context, 'saved_files', recognizedText);
+      if (mounted) {
+        _handleVoiceCommand(recognizedText);
+      }
     };
 
     voiceService.autoRestart = true;
 
     await voiceService.init();
+    _isVoiceInitialized = true;
+
+    if (mounted) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      await voiceService.pauseDuringTTS();
+      await _announceFiles();
+      await voiceService.resumeAfterTTS();
+    }
+  }
+
+  Future<void> _announceFiles() async {
+    if (_files.isEmpty) {
+      await tts.speak(
+        "Lessons screen. No files available. Ask your parent to share some lessons.",
+      );
+    } else if (_files.length == 1) {
+      await tts.speak(
+        "Lessons screen. You have 1 file: ${_files[0].title}. Say the file name to open it.",
+      );
+    } else if (_files.length <= 3) {
+      final fileNames = _files.map((f) => f.title).join(', ');
+      await tts.speak(
+        "Lessons screen. You have ${_files.length} files: $fileNames. Say a file name to open it.",
+      );
+    } else {
+      final firstThree = _files.take(3).map((f) => f.title).join(', ');
+      await tts.speak(
+        "Lessons screen. You have ${_files.length} files. First few are: $firstThree. Say a file name to open it.",
+      );
+    }
+  }
+
+  Future<void> _handleVoiceCommand(String recognizedText) async {
+    final command = recognizedText.toLowerCase().trim();
+
+    // First check if it matches a file name
+    final matchedFile = _findFileByName(command);
+    if (matchedFile != null) {
+      try {
+        // Pause voice service BEFORE TTS
+        await voiceService.pauseDuringTTS();
+        await tts.stop();
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        print(
+          "🎯 Matched file: ${matchedFile.title}, preparing to navigate...",
+        );
+
+        final fileMap = matchedFile.toFullMap();
+        print("📦 File map created with ${fileMap.keys.length} keys");
+
+        if (!mounted) {
+          print("❌ Widget not mounted, cannot navigate");
+          await voiceService.resumeAfterTTS();
+          return;
+        }
+
+        print("🚀 Navigating to single_file_screen...");
+
+        // Navigate FIRST, then speak
+        Navigator.pushNamed(
+              context,
+              'single_file_screen',
+              arguments: {'fileData': fileMap},
+            )
+            .then((_) {
+              print("✅ Navigation completed successfully");
+            })
+            .catchError((error) {
+              print("❌ Navigation error: $error");
+            });
+
+        // Small delay to ensure navigation starts
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // Speak after navigation has started
+        await tts.speak("Opening ${matchedFile.title}");
+
+        print("🔊 TTS completed");
+      } catch (e) {
+        print("❌ Error in _handleVoiceCommand: $e");
+        await voiceService.resumeAfterTTS();
+      }
+
+      // Don't resume here - we're navigating away, so the new screen will handle voice
+      return;
+    }
+
+    // Otherwise, handle as a regular command
+    commandHandler.handleCommand(context, 'saved_files', recognizedText);
+  }
+
+  LessonFile? _findFileByName(String command) {
+    // Try exact match first
+    for (var file in _files) {
+      if (file.title.toLowerCase().trim() == command) {
+        return file;
+      }
+    }
+
+    // Try partial match (contains)
+    for (var file in _files) {
+      final fileTitleLower = file.title.toLowerCase().trim();
+      if (fileTitleLower.contains(command) ||
+          command.contains(fileTitleLower)) {
+        return file;
+      }
+    }
+
+    // Try word-by-word matching
+    final commandWords = command.split(' ').where((w) => w.length > 2).toList();
+    if (commandWords.isNotEmpty) {
+      for (var file in _files) {
+        final fileTitleLower = file.title.toLowerCase();
+        final allWordsMatch = commandWords.every(
+          (word) => fileTitleLower.contains(word),
+        );
+        if (allWordsMatch) {
+          return file;
+        }
+      }
+    }
+
+    return null;
   }
 
   @override
   void dispose() {
-    print("=== SAVED FILES SCREEN DISPOSE ===");
-    // Stop TTS first
-    tts.stop();
-    // Uninitialize voice service
-    voiceService.uninitialize();
-    // Dispose command handler
-    commandHandler.dispose();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _isVoiceInitialized = false;
+    try {
+      tts.stop();
+    } catch (e) {}
+    try {
+      voiceService.uninitialize();
+    } catch (e) {}
+    try {
+      commandHandler.dispose();
+    } catch (e) {}
     super.dispose();
   }
 
@@ -184,6 +369,14 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
                 }
 
                 final files = snapshot.data!;
+
+                // Update files list
+                if (files.isNotEmpty) {
+                  _files = files;
+                } else {
+                  _files = [];
+                }
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -258,7 +451,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
 
   Widget _buildFileCard(LessonFile file) {
     final fileColor = _getFileTypeColor(file.fileType);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -293,10 +486,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      fileColor,
-                      fileColor.withOpacity(0.8),
-                    ],
+                    colors: [fileColor, fileColor.withOpacity(0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

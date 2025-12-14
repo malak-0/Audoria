@@ -1,3 +1,5 @@
+import 'package:audoria/utils/backend_services/shared_preferences_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -41,15 +43,77 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  void _checkAuthAndNavigate() {
+  Future<void> _checkAuthAndNavigate() async {
+    // Check both Firebase Auth and Shared Preferences
     User? user = FirebaseAuth.instance.currentUser;
+    bool isLoggedIn = await SharedPreferencesHelper.getIsLoggedIn();
 
-    if (user != null) {
-      // User is logged in, navigate to home
-      Navigator.pushReplacementNamed(context, 'parent_home');
+    // If Firebase Auth has a user but shared preferences says not logged in,
+    // sign out from Firebase to keep them in sync
+    if (user != null && !isLoggedIn) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, 'login');
+      }
+      return;
+    }
+
+    // If user is logged in (both Firebase Auth and Shared Preferences confirm)
+    if (user != null && isLoggedIn) {
+      final userUid = user.uid;
+
+      // Check if user is a parent
+      final parentDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userUid)
+          .get();
+
+      if (parentDoc.exists) {
+        // User is a parent, navigate to parent home
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, 'parent_home');
+        }
+        return;
+      }
+
+      // Check if user is a child
+      final allUsers = await FirebaseFirestore.instance
+          .collection('users')
+          .get();
+      bool isChild = false;
+
+      for (final userDoc in allUsers.docs) {
+        final childDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userDoc.id)
+            .collection('children')
+            .doc(userUid)
+            .get();
+
+        if (childDoc.exists) {
+          isChild = true;
+          break;
+        }
+      }
+
+      if (isChild) {
+        // User is a child, navigate to child home
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, 'child_home');
+        }
+        return;
+      }
+
+      // User exists in Firebase Auth but not in database, clear login status
+      await SharedPreferencesHelper.setLoggedIn(false);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, 'login');
+      }
     } else {
-      // User is not logged in, navigate to register
-      Navigator.pushReplacementNamed(context, 'register');
+      // User is not logged in, navigate to login
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, 'login');
+      }
     }
   }
 
