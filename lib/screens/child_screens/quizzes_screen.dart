@@ -25,7 +25,6 @@ class QuizzesScreen extends StatefulWidget {
 class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
   late SpeechFeedback tts;
   late CommandHandler commandHandler;
-  final VoiceService mainVoiceService = VoiceService();
   final GeminiService geminiService = GeminiService();
   final InsightsService insightsService = InsightsService();
   final PageController _pageController = PageController();
@@ -75,37 +74,34 @@ class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
 
   Future<void> _initializeQuizVoiceSystem() async {
     try {
-      print("🎤 QUIZ: Stopping main VoiceService first...");
+      print("🎤 QUIZ: Waiting for microphone to be fully released...");
 
-      // Stop the main voice service before starting quiz voice
-      await mainVoiceService.stop();
-      await mainVoiceService.uninitialize();
-      print("✅ QUIZ: Main VoiceService stopped");
-
-      // Wait a bit to ensure microphone is released
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Wait to ensure microphone is fully released from previous screen
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       print("🎤 QUIZ: Initializing simple quiz voice system...");
 
       _isSpeechInitialized = await _speech.initialize(
         onStatus: (status) {
-          print("🎤 QUIZ: Speech status: $status");
+          print(
+            "🎧 QUIZ SPEECH STATUS: $status (isListening: $_isListening, forAnswer: $_isListeningForAnswer)",
+          );
 
           // If we're supposed to be listening but we're not, restart
           if (_isListeningForAnswer &&
               !_isListening &&
               status == 'notListening') {
-            print("🎤 QUIZ: Detected notListening status, restarting...");
+            print("🔄 QUIZ: Detected notListening status, restarting...");
             _startQuizListening();
           }
         },
         onError: (error) {
-          print("🎤 QUIZ: Speech error: $error");
+          print("❌ QUIZ SPEECH ERROR: ${error.errorMsg}");
 
           // Reset on error
           _isListening = false;
           if (_isListeningForAnswer) {
-            print("🎤 QUIZ: Error occurred, restarting listening...");
+            print("🔄 QUIZ: Error occurred, restarting listening...");
             _startQuizListening();
           }
         },
@@ -484,8 +480,6 @@ class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
         actions: [
           TextButton(
             onPressed: () {
-              // Restart main voice service before going back
-              _restartMainVoiceService();
               Navigator.pop(context);
               Navigator.pop(context);
             },
@@ -494,16 +488,6 @@ class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
         ],
       ),
     );
-  }
-
-  Future<void> _restartMainVoiceService() async {
-    try {
-      print("🎤 QUIZ: Restarting main VoiceService...");
-      await mainVoiceService.init();
-      print("✅ QUIZ: Main VoiceService restarted");
-    } catch (e) {
-      print("❌ QUIZ: Error restarting main VoiceService: $e");
-    }
   }
 
   Future<void> _repeatQuestion() async {
@@ -538,7 +522,6 @@ class _QuizzesScreenState extends State<QuizzesScreen> with RouteAware {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      _restartMainVoiceService();
                       Navigator.pop(context);
                     },
                     child: Container(

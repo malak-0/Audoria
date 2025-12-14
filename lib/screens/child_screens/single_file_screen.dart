@@ -238,9 +238,23 @@ class _SingleFileScreenState extends State<SingleFileScreen> with RouteAware {
 
                           if (fileOption.title.toLowerCase() == 'read file') {
                             await _readFile();
+                            await voiceService.resumeAfterTTS();
                           } else if (fileOption.routeName != null) {
                             if (fileOption.routeName == 'summarization' ||
                                 fileOption.routeName == 'quizzes') {
+                              // Stop voice service completely before navigating
+                              print(
+                                "?? SINGLE FILE: Stopping voice service before navigation to ${fileOption.routeName}",
+                              );
+                              await voiceService.stop();
+                              await voiceService.uninitialize();
+                              await Future.delayed(
+                                const Duration(milliseconds: 300),
+                              );
+                              print(
+                                "? SINGLE FILE: Voice service stopped and microphone released",
+                              );
+
                               final fileMap = widget.selectedFile.toFullMap();
                               NavigationHelper.goTo(
                                 context,
@@ -252,13 +266,12 @@ class _SingleFileScreenState extends State<SingleFileScreen> with RouteAware {
                                 context,
                                 fileOption.routeName!,
                               );
+                              await Future.delayed(
+                                const Duration(milliseconds: 500),
+                              );
+                              await voiceService.resumeAfterTTS();
                             }
                           }
-
-                          await Future.delayed(
-                            const Duration(milliseconds: 500),
-                          );
-                          await voiceService.resumeAfterTTS();
                         },
                       ),
                     );

@@ -203,6 +203,15 @@ class CommandHandler {
         return;
       }
 
+      // Stop voice service completely before navigating to summarization
+      print(
+        "🔇 CommandHandler: Stopping voice service before summarization navigation",
+      );
+      await _voiceService?.stop();
+      await _voiceService?.uninitialize();
+      await Future.delayed(const Duration(milliseconds: 300));
+      print("✅ CommandHandler: Voice service stopped and microphone released");
+
       // Navigate to loading screen first
       Navigator.pushNamed(
         context,
@@ -361,6 +370,13 @@ class CommandHandler {
         await _safeResumeAfterTTS();
         return;
       }
+
+      // Stop voice service completely before navigating to quiz
+      print("🔇 CommandHandler: Stopping voice service before quiz navigation");
+      await _voiceService?.stop();
+      await _voiceService?.uninitialize();
+      await Future.delayed(const Duration(milliseconds: 300));
+      print("✅ CommandHandler: Voice service stopped and microphone released");
 
       Navigator.pushNamed(
         context,

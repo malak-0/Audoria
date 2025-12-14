@@ -170,10 +170,15 @@ class VoiceService {
   }
 
   Future<void> uninitialize() async {
+    print("🔇 VoiceService: Uninitializing - disabling all features");
+    autoRestart = false; // Disable auto-restart FIRST
+    _isTemporarilyPaused = true; // Prevent any restarts
+    onResult = null; // Clear the callback
     await _speech.cancel();
+    await _speech.stop();
     _isListening = false;
     _isAvailable = false;
-    _isTemporarilyPaused = false;
+    print("✅ VoiceService: Uninitialized completely");
   }
 
   Future<void> hardReset() async {
