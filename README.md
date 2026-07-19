@@ -74,3 +74,7 @@ Audoria removes learning barriers by eliminating visual dependency, simplifying 
 👤 **Omar Mahmoud**  
 📧 [omrmhd54@gmail.com](mailto:omrmhd54@gmail.com)  
 🔗 [GitHub](https://github.com/omrmhd5)
+
+👤 **Salma Mehrez**  
+📧 [salmamehrez85@gmail.com](mailto:salmamehrez85@gmail.com)  
+🔗 [GitHub](https://github.com/salmamehrez85)
